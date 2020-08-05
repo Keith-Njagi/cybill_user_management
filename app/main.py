@@ -10,7 +10,6 @@ from models import db, ma
 app = Flask(__name__)
 
 
-
 app.config.from_object(Development)
 
 CORS(app)

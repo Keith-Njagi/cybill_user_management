@@ -10,7 +10,7 @@ from .logout import api as logout
 # from .roles import api as roles
 # from .manage_user import api as manage_user
 # from .update import api as update_user
-# from .password_manager import api as password_reset
+from .password_reset import api as password_reset
 # from .sessions import api as sessions
 
 jwt = JWTManager()
@@ -33,7 +33,7 @@ api.add_namespace(logout)
 # api.add_namespace(roles)
 # api.add_namespace(manage_user)
 # api.add_namespace(update_user)
-# api.add_namespace(password_reset)
+api.add_namespace(password_reset)
 # api.add_namespace(sessions)
 
 @jwt.user_claims_loader
