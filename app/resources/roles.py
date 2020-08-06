@@ -45,7 +45,8 @@ class UserRoleList(Resource):
 
         role_record = UserRole.fetch_by_user_id(id)
         if role_record:
-            user_role = user_role_schema.dump(role_record)
+            # user_role = user_role_schema.dump(role_record)
+            user_role = role_record.role.role
             return {'role': user_role}, 200
         return {'message': 'Record not found'}, 400
 
@@ -69,6 +70,7 @@ class UserRoleList(Resource):
             role = data['role']
             id = role_record.id
             UserRole.update(id, role_id=role)
-            user_role = user_role_schema.dump(role_record)
+            # user_role = user_role_schema.dump(role_record)
+            user_role = role_record.role.role
             return {'message': 'User role updated', 'role': user_role}, 200
         return {'message': 'Record not found'}, 400
