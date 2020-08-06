@@ -7,11 +7,11 @@ from .mail import mail
 from .signup import api as signup
 from .login import api as login
 from .logout import api as logout
-# from .roles import api as roles
-# from .manage_user import api as manage_user
-# from .update import api as update_user
+from .roles import api as roles
+from .manage_user import api as manage_user
+from .update import api as update_user
 from .password_reset import api as password_reset
-# from .sessions import api as sessions
+from .sessions import api as sessions
 
 jwt = JWTManager()
 
@@ -30,11 +30,11 @@ api = Api(blueprint, doc='/documentation', title='User management API', version=
 api.add_namespace(signup)
 api.add_namespace(login)
 api.add_namespace(logout)
-# api.add_namespace(roles)
-# api.add_namespace(manage_user)
-# api.add_namespace(update_user)
+api.add_namespace(roles)
+api.add_namespace(manage_user)
+api.add_namespace(update_user)
 api.add_namespace(password_reset)
-# api.add_namespace(sessions)
+api.add_namespace(sessions)
 
 @jwt.user_claims_loader
 # Remember identity is what we define when creating the access token

@@ -27,6 +27,11 @@ class Session(db.Model):
     def fetch_by_id(cls, id):
         return cls.query.get(id)
 
+    
+    @classmethod
+    def fetch_by_user_id(cls, user_id):
+        return cls.query.filter_by(user_id=user_id).all()
+
     @classmethod
     def delete_by_id(cls, id):
         record = cls.query.filter_by(id=id)
