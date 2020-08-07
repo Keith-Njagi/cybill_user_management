@@ -7,7 +7,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(50), nullable=False)
     email =  db.Column(db.String(80), nullable=False, unique=True)
-    phone =  db.Column(db.Integer(12), nullable=False, unique=True) #254718365458
+    phone =  db.Column(db.String(12), nullable=False, unique=True) #254718365458
     password = db.Column(db.String, nullable=False)
     is_suspended = db.Column(db.Integer, default=0, nullable=False)  # 0 is False, 1 is True, 2 is restored/False
     created = db.Column(db.DateTime, default=datetime.utcnow(), nullable=False)
