@@ -98,5 +98,5 @@ class RegisterUser(Resource):
         # Save session info to db
         new_session_record = Session(user_ip_address=ip, device_operating_system=device_os, user_id=user_id)    
         new_session_record.insert_record()
-        return {'message': 'Success', 'access token': access_token, "refresh_token": refresh_token, 'user': user}, 201
+        return {'access token': access_token, "refresh_token": refresh_token, 'user': user}, 201
 

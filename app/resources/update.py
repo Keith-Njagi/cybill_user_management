@@ -1,8 +1,9 @@
 from flask_restx import Namespace, Resource, fields
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from flask import abort
+from flask import abort, jsonify
 
 from models.user_model import User, UserSchema
+from user_functions.record_user_log import record_user_log
 
 api = Namespace('update', description='Update User')
 
@@ -58,4 +59,10 @@ class UpdateUser(Resource):
         this_user = User.fetch_by_email(email)
         current_user = user_schema.dump(this_user)
 
-        return {'message': 'User updated.', 'user': current_user}, 200
+        # Record this event in user's logs
+        log_user_id = authorised_user['id']
+        log_method = 'put'
+        log_description = 'Updated user details'
+        record_user_log(log_user_id, log_method, log_description)
+
+        return {'user': current_user}, 200

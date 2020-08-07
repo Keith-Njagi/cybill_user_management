@@ -6,6 +6,8 @@ from flask import abort, jsonify
 from werkzeug.exceptions import BadRequest
 
 from models.user_model import User, UserSchema
+from user_functions.record_user_log import record_user_log
+
 
 api = Namespace('user', description='Manage User')
 
@@ -25,8 +27,40 @@ class UserList(Resource):
         if authorised_user['privileges'] == 'Customer care' or claims['is_admin'] :
             my_users = User.fetch_all()
             users = users_schema.dump(my_users)
-            return {'status': 'Matches retrieved', 'users': users}, 200
+
+            # Record this event in user's logs
+            log_user_id = authorised_user['id']
+            log_method = 'get'
+            log_description = 'Fetched all users'
+            record_user_log(log_user_id, log_method, log_description)
+
+            return {'users': users}, 200
         abort(400, 'You do not have the required permissions!')
+
+@api.route('/<int:id>')
+@api.param('id', 'The user identifier')
+class GetUser(Resource):
+    @api.doc('get_user')
+    @jwt_required
+    def get(self, id):
+        '''Get Specific User'''
+        claims = get_jwt_claims()
+        authorised_user = get_jwt_identity()
+        if authorised_user['privileges'] == 'Customer care' or user_id == authorised_user['id']  or claims['is_admin'] :
+            my_user = User.fetch_by_id(id)
+            user = user_schema.dump(my_user)
+
+            if len(user) == 0:
+                abort(400, 'User does not exist')
+
+            # Record this event in user's logs
+            log_user_id = authorised_user['id']
+            log_method = 'get'
+            log_description = 'Fetched user <' + id + '>'
+            record_user_log(log_user_id, log_method, log_description)
+            
+            return {'user': user}, 200
+        return {'message': 'You are not authorised to view this user!'}
 
 
 @api.route('/suspend/<int:id>')
@@ -47,6 +81,13 @@ class SuspendUser(Resource):
             is_suspended = 1
             try:
                 User.suspend(id, is_suspended=is_suspended)
+
+                # Record this event in user's logs
+                log_user_id = authorised_user['id']
+                log_method = 'put'
+                log_description = 'Suspended user <' + id + '>'
+                record_user_log(log_user_id, log_method, log_description)
+
                 return {'message': 'User suspended successfuly'}, 200
             except:
                 return{'message': 'Unable to perform this action'}, 400
@@ -72,6 +113,13 @@ class RestoreUser(Resource):
             is_suspended = 2
             try:
                 User.restore(id=id, is_suspended=is_suspended)
+
+                # Record this event in user's logs
+                log_user_id = authorised_user['id']
+                log_method = 'put'
+                log_description = 'Restored user <' + id + '>'
+                record_user_log(log_user_id, log_method, log_description)
+
                 return {'message': 'User restored successfuly'}, 200
             except:
                 return{'message': 'Unable to perform this action'}, 400
@@ -97,5 +145,11 @@ class DeleteUser(Resource):
             abort(400, 'You do not have the required permissions to delete this user!')
 
         User.delete_by_id(id)
+
+        # Record this event in user's logs
+        log_user_id = authorised_user['id']
+        log_method = 'delete'
+        log_description = 'Deleted user <' + id + '>'
+        record_user_log(log_user_id, log_method, log_description)
 
         return {'message': 'User deleted successfuly'}, 200

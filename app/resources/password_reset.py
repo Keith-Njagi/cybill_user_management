@@ -3,6 +3,7 @@ import smtplib
 from datetime import timedelta, datetime
 
 import uuid
+import requests
 from flask_restx import Namespace, Resource, fields
 from werkzeug.security import generate_password_hash
 from flask_jwt_extended import create_access_token, create_refresh_token
@@ -16,8 +17,7 @@ from models.session_model import Session
 from user_functions.token_generator import TokenGenerator
 from user_functions.user_role_manager import UserPrivilege
 from user_functions.compute_session_data import generate_device_data
-
-
+from user_functions.record_user_log import record_user_log
 
 api = Namespace('password', description='Change User Password')
 
@@ -27,7 +27,7 @@ user_schema = UserSchema()
 users_schema = UserSchema(many=True)
 user_role_schema = UserRoleSchema()
 
-reset_token_model = api.model('PasswordResetToken', {
+reset_token_model = api.model('PasswordReset', {
     'email': fields.String(required=True, description='Email registered under one of the accounts')
 })
 
@@ -35,6 +35,7 @@ password_reset_model = api.model('ChangePassword', {
     'password': fields.String(required=True, description='New Password')
 })
 
+log_submission_url = 'http://127.0.0.1:3100/api/logs'
 
 @api.route('/forgot')
 class SendResetLink(Resource):
@@ -69,10 +70,8 @@ class SendResetLink(Resource):
             msg = Message('Password Change', sender='keithnjagicodingtrials@gmail.com', recipients=[email])
             msg.body = txt_template
             msg.html = html_template
-            # msg.attach(template, content_type='text/html; charset=UTF-8')
-
             mail.send(msg)
-            return {'message':'Success', 'reset_token':reset_token}, 200
+            return {'message':'Please check your mail', 'reset_token':reset_token}, 200 # the reset token should be removed in production
         except Exception as e:
             print('========================================')
             print('mail error description: ', e)
@@ -158,7 +157,7 @@ class ResetPassword(Resource):
             is_expired = True
             user_records = PasswordReset.fetch_by_user_id(user_id)
             record_ids = []
-            for record in record_ids:
+            for record in user_records:
                 record_ids.append(record.id)
             for record_id in record_ids:
                 PasswordReset.expire_token(id=record_id, is_expired=is_expired)
@@ -198,4 +197,11 @@ class ResetPassword(Resource):
         # Save session info to db
         new_session_record = Session(user_ip_address=ip, device_operating_system=device_os, user_id=user_id)    
         new_session_record.insert_record()
-        return {'message': 'Password changed and user logged in', 'user': user, 'access_token': access_token, "refresh_token": refresh_token}, 200
+
+        # Record this event in user's logs
+        log_user_id = this_user.id
+        log_method = 'put'
+        log_description = 'Password reset'
+        record_user_log(log_user_id, log_method, log_description)
+        
+        return {'user': user, 'access_token': access_token, "refresh_token": refresh_token}, 200

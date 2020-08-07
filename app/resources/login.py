@@ -72,7 +72,7 @@ class Login(Resource):
                 # Save session info to db
                 new_session_record = Session(user_ip_address=ip, device_operating_system=device_os, user_id=user_id)    
                 new_session_record.insert_record()
-                return {'message': 'User logged in', 'user': current_user, 'access_token': access_token, "refresh_token": refresh_token}, 200
+                return {'user': current_user, 'access_token': access_token, "refresh_token": refresh_token}, 200
         if not this_user or not check_password_hash(this_user.password, data['password']):
             return {'message': 'Could not log in, please check your credentials'}, 400
 
