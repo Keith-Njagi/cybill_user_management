@@ -25,8 +25,27 @@ class UserList(Resource):
         if authorised_user['privileges'] == 'Customer care' or claims['is_admin'] :
             my_users = User.fetch_all()
             users = users_schema.dump(my_users)
-            return {'status': 'Matches retrieved', 'users': users}, 200
+            return {'users': users}, 200
         abort(400, 'You do not have the required permissions!')
+
+@api.route('/<int:id>')
+@api.param('id', 'The user identifier')
+class GetUser(Resource):
+    @api.doc('get_user')
+    @jwt_required
+    def get(self, id):
+        '''Get Specific User'''
+        claims = get_jwt_claims()
+        authorised_user = get_jwt_identity()
+        if authorised_user['privileges'] == 'Customer care' or user_id == authorised_user['id']  or claims['is_admin'] :
+            my_user = User.fetch_by_id(id)
+            user = user_schema.dump(my_user)
+
+            if len(user) == 0:
+                abort(400, 'User does not exist')
+            
+            return {'user': user}, 200
+        return {'message': 'You are not authorised to view this user!'}
 
 
 @api.route('/suspend/<int:id>')

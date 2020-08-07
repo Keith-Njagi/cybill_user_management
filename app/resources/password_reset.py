@@ -27,7 +27,7 @@ user_schema = UserSchema()
 users_schema = UserSchema(many=True)
 user_role_schema = UserRoleSchema()
 
-reset_token_model = api.model('PasswordResetToken', {
+reset_token_model = api.model('PasswordReset', {
     'email': fields.String(required=True, description='Email registered under one of the accounts')
 })
 
@@ -72,7 +72,7 @@ class SendResetLink(Resource):
             # msg.attach(template, content_type='text/html; charset=UTF-8')
 
             mail.send(msg)
-            return {'message':'Success', 'reset_token':reset_token}, 200
+            return {'message':'Please check your mail', 'reset_token':reset_token}, 200 # the reset token should be removed in production
         except Exception as e:
             print('========================================')
             print('mail error description: ', e)
@@ -198,4 +198,4 @@ class ResetPassword(Resource):
         # Save session info to db
         new_session_record = Session(user_ip_address=ip, device_operating_system=device_os, user_id=user_id)    
         new_session_record.insert_record()
-        return {'message': 'Password changed and user logged in', 'user': user, 'access_token': access_token, "refresh_token": refresh_token}, 200
+        return {'user': user, 'access_token': access_token, "refresh_token": refresh_token}, 200

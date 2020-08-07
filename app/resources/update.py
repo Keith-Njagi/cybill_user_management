@@ -58,4 +58,4 @@ class UpdateUser(Resource):
         this_user = User.fetch_by_email(email)
         current_user = user_schema.dump(this_user)
 
-        return {'message': 'User updated.', 'user': current_user}, 200
+        return {'user': current_user}, 200

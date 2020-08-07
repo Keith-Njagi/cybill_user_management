@@ -1,10 +1,10 @@
 from flask_restx import Namespace, Resource, fields
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt_claims
-from flask import abort, jsonify
+from flask import abort
 
 from models.session_model import Session, SessionSchema
 
-api = Namespace('session', description='View User Sessions')
+api = Namespace('session', description='User Session Operations')
 
 session_schema = SessionSchema()
 sessions_schema = SessionSchema(many=True)
@@ -23,13 +23,13 @@ class SessionList(Resource):
             # full_name = my_sessions.user.full_name
             sessions = sessions_schema.dump(my_sessions)
             # sessions.update({'full_name': full_name})
-            return {'status': 'Matches retrieved', 'sessions': sessions}, 200
+            return {'sessions': sessions}, 200
         user_id = authorised_user['id']
         my_sessions = Session.fetch_by_user_id(user_id)
         # full_name = my_sessions.user.full_name
         sessions = sessions_schema.dump(my_sessions)
         # sessions.update({'full_name': full_name})
-        return {'status': 'Matches retrieved', 'sessions': sessions}, 200
+        return { 'sessions': sessions}, 200
 
 
 @api.route('/user/<int:user_id>')
@@ -48,6 +48,6 @@ class UserSessionList(Resource):
                 sessions = sessions_schema.dump(my_sessions)
                 # sessions.update({'full_name': full_name})
 
-                return {'status': 'Matches retrieved', 'sessions': sessions}, 200
+                return {'sessions': sessions}, 200
             return {'message': 'No sessions found'}, 400
         return {'message': 'You are not authorised to view these sessions.'}, 400

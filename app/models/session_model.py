@@ -33,6 +33,10 @@ class Session(db.Model):
         return cls.query.filter_by(user_id=user_id).all()
 
     @classmethod
+    def fetch_current_user_session(cls, user_id):
+        return cls.query.filter_by(user_id=user_id).order_by(cls.id.desc()).first()
+
+    @classmethod
     def delete_by_id(cls, id):
         record = cls.query.filter_by(id=id)
         record.delete()

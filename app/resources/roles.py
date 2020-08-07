@@ -7,14 +7,14 @@ from models.role_model import Role, RoleSchema
 from models.user_role_model import UserRole, UserRoleSchema
 from user_functions.user_role_manager import UserPrivilege
 
-api = Namespace('roles', description='Register User')
+api = Namespace('roles', description='User Role Operations')
 
 role_schema = RoleSchema()
 roles_schema = RoleSchema(many=True)
 user_role_schema = UserRoleSchema()
 user_roles_schema = UserRoleSchema(many=True)
 
-user_role_model = api.model('UpdateUserRole', {
+user_role_model = api.model('UserRole', {
     'role': fields.Integer(required=True, description='Role'),
 })
 
@@ -72,5 +72,5 @@ class UserRoleList(Resource):
             UserRole.update(id, role_id=role)
             # user_role = user_role_schema.dump(role_record)
             user_role = role_record.role.role
-            return {'message': 'User role updated', 'role': user_role}, 200
+            return {'role': user_role}, 200
         return {'message': 'Record not found'}, 400

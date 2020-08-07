@@ -12,6 +12,7 @@ from .manage_user import api as manage_user
 from .update import api as update_user
 from .password_reset import api as password_reset
 from .sessions import api as sessions
+from .user_logs import api as user_logs
 
 jwt = JWTManager()
 
@@ -35,6 +36,7 @@ api.add_namespace(manage_user)
 api.add_namespace(update_user)
 api.add_namespace(password_reset)
 api.add_namespace(sessions)
+api.add_namespace(user_logs)
 
 @jwt.user_claims_loader
 # Remember identity is what we define when creating the access token
