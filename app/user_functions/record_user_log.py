@@ -1,6 +1,6 @@
 import requests
 
-log_submission_url = 'http://127.0.0.1:3100/api/logs'
+log_submission_url = 'https://49e37f22a576.ngrok.io/api/logs' # 'http://0.0.0.0:3100/api/logs'
 
 def record_user_log(user_id, method, description):
     payload = {'user_id':user_id, 'method': method, 'description': description}
