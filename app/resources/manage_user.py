@@ -46,7 +46,7 @@ class GetUser(Resource):
         '''Get Specific User'''
         claims = get_jwt_claims()
         authorised_user = get_jwt_identity()
-        if authorised_user['privileges'] == 'Customer care' or user_id == authorised_user['id']  or claims['is_admin'] :
+        if authorised_user['privileges'] == 'Customer care' or id == authorised_user['id']  or claims['is_admin'] :
             my_user = User.fetch_by_id(id)
             user = user_schema.dump(my_user)
 
@@ -56,7 +56,7 @@ class GetUser(Resource):
             # Record this event in user's logs
             log_user_id = authorised_user['id']
             log_method = 'get'
-            log_description = 'Fetched user <' + id + '>'
+            log_description = 'Fetched user <' + str(id) + '>'
             record_user_log(log_user_id, log_method, log_description)
             
             return {'user': user}, 200
@@ -85,7 +85,7 @@ class SuspendUser(Resource):
                 # Record this event in user's logs
                 log_user_id = authorised_user['id']
                 log_method = 'put'
-                log_description = 'Suspended user <' + id + '>'
+                log_description = 'Suspended user <' + str(id) + '>'
                 record_user_log(log_user_id, log_method, log_description)
 
                 return {'message': 'User suspended successfuly'}, 200
@@ -117,7 +117,7 @@ class RestoreUser(Resource):
                 # Record this event in user's logs
                 log_user_id = authorised_user['id']
                 log_method = 'put'
-                log_description = 'Restored user <' + id + '>'
+                log_description = 'Restored user <' + str(id) + '>'
                 record_user_log(log_user_id, log_method, log_description)
 
                 return {'message': 'User restored successfuly'}, 200
@@ -149,7 +149,7 @@ class DeleteUser(Resource):
         # Record this event in user's logs
         log_user_id = authorised_user['id']
         log_method = 'delete'
-        log_description = 'Deleted user <' + id + '>'
+        log_description = 'Deleted user <' + str(id) + '>'
         record_user_log(log_user_id, log_method, log_description)
 
         return {'message': 'User deleted successfuly'}, 200

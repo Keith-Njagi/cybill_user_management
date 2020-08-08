@@ -38,8 +38,8 @@ class Login(Resource):
         else:
             ip = request.environ['HTTP_X_FORWARDED_FOR']
 
-        # if ip is None or str(ip) == '127.0.0.1'or str(ip) == '172.17.0.1':
-        #     abort(400, 'This request has been rejected. Please use a recognised device')
+        if ip is None or str(ip) == '127.0.0.1'or str(ip) == '172.17.0.1':
+            abort(400, 'This request has been rejected. Please use a recognised device')
 
         # Compute operating system and location
         device_operating_system = generate_device_data()

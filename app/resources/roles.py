@@ -62,7 +62,7 @@ class UserRoleList(Resource):
             # Record this event in user's logs
             log_user_id = authorised_user['id']
             log_method = 'get'
-            log_description = 'Fetched role for user <' + id + '>'
+            log_description = 'Fetched role for user <' + str(id) + '>'
             record_user_log(log_user_id, log_method, log_description)
 
             return {'role': user_role}, 200
@@ -95,7 +95,7 @@ class UserRoleList(Resource):
             # Record this event in user's logs
             log_user_id = authorised_user['id']
             log_method = 'put'
-            log_description = 'Updated role for user <' + id + '>'
+            log_description = 'Updated role for user <' + str(id) + '>'
             record_user_log(log_user_id, log_method, log_description)
 
             return {'role': user_role}, 200

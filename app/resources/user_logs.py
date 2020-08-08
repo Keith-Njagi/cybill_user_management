@@ -84,14 +84,14 @@ class GetLog(Resource):
         authorised_user = get_jwt_identity()
         user_id = authorised_user['id']
 
-        # fetch last/current session
-        current_session = Session.fetch_current_user_session(user_id)
-        session_user = current_session.user_id
-        if authorised_user['privileges'] == 'Customer care' or user_id == session_user  or claims['is_admin'] :
-            db_user_log = UserLog.fetch_by_id(id)
-            user_log = user_log_schema.dump(db_user_log)
-            if len(user_log) == 0:
-                return{'message':'This user log does not exist.'}, 400
+        db_user_log = UserLog.fetch_by_id(id)
+        user_log = user_log_schema.dump(db_user_log)
+        if len(user_log) == 0:
+            return{'message':'This user log does not exist.'}, 400
+
+        requested_session = Session.fetch_by_id(id=db_user_log.session_id)
+
+        if authorised_user['privileges'] == 'Customer care' or user_id == requested_session.user_id  or claims['is_admin'] :
             return {'log': user_log}, 200
         return {'message':'You are not authorised to view this log.'}, 400
 
@@ -158,7 +158,8 @@ class ListLogsByUser(Resource):
                 db_user_logs = UserLog.fetch_by_session_id(session_id)
                 user_logs = user_logs_schema.dump(db_user_logs)
                 if len(user_logs) != 0:
-                    logs.append(user_logs)
+                    for log in user_logs:
+                        logs.append(log)
             if len(logs) == 0:
                 return {'message':'There are no logs for this user yet.'}, 400
             return {'logs': logs}
