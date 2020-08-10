@@ -1,6 +1,5 @@
 from flask_restx import Namespace, Resource, fields
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt_claims
-from flask import abort
 
 from models.user_logs_model import UserLog, UserLogSchema
 from models.session_model import Session, SessionSchema
@@ -32,9 +31,9 @@ class ListAllLogs(Resource):
             my_logs = UserLog.fetch_all()
             logs = user_logs_schema.dump(my_logs)
             if len(logs) == 0:
-                return {'message': 'No user logs created yet.'}, 400
-            return {'logs': logs}
-        return {'message': 'You are not authorised to view this information!'}, 400
+                return {'message': 'No user logs created yet.'}, 404
+            return {'logs': logs}, 200
+        return {'message': 'You are not authorised to view this information!'}, 403
 
     #@jwt_required
     @api.doc('post_user_log')
@@ -46,16 +45,13 @@ class ListAllLogs(Resource):
             # user_id = authorised_user['id']
 
             data = api.payload
-            # data = request.get_json(force=True)
             if not data:
-                abort(400, 'No input data detected')
+                return {'message':'No input data detected'}, 400
 
             user_id = data['user_id']
             # fetch last/current session
             current_session = Session.fetch_current_user_session(user_id)
             session_id = current_session.id
-            print('Session ID: ', session_id)
-
             
             method = data['method'].lower()
             description = data['description'].lower()
@@ -87,13 +83,13 @@ class GetLog(Resource):
         db_user_log = UserLog.fetch_by_id(id)
         user_log = user_log_schema.dump(db_user_log)
         if len(user_log) == 0:
-            return{'message':'This user log does not exist.'}, 400
+            return{'message':'This user log does not exist.'}, 404
 
         requested_session = Session.fetch_by_id(id=db_user_log.session_id)
 
         if authorised_user['privileges'] == 'Customer care' or user_id == requested_session.user_id  or claims['is_admin'] :
             return {'log': user_log}, 200
-        return {'message':'You are not authorised to view this log.'}, 400
+        return {'message':'You are not authorised to view this log.'}, 403
 
 
 # get all logs by session - User, Admin, Customer care
@@ -115,15 +111,15 @@ class ListLogsBySession(Resource):
         requested_session = Session.fetch_by_id(id=session_id)
         session = session_schema.dump(requested_session)
         if len(session) == 0:
-            return {'message': 'The requested session does not exist!'}, 400
+            return {'message': 'The requested session does not exist!'}, 404
 
         if authorised_user['privileges'] == 'Customer care' or requested_session.user_id == session_user  or claims['is_admin'] :
             db_user_logs = UserLog.fetch_by_session_id(session_id)
             user_logs = user_logs_schema.dump(db_user_logs)
             if len(user_logs) == 0:
-                return{'message':'These user logs do not exist.'}, 400
+                return{'message':'These user logs do not exist.'}, 404
             return {'logs': user_logs}, 200
-        return {'message':'You are not authorised to view this log.'}, 400
+        return {'message':'You are not authorised to view this log.'}, 403
 
 
 # get all logs by user - User, Admin, Customer care
@@ -142,7 +138,7 @@ class ListLogsByUser(Resource):
         current_session = Session.fetch_current_user_session(user_id)
         this_session = session_schema.dump(current_session)
         if len(this_session) == 0:
-                return {'message':'This user does not exist.'}, 400
+                return {'message':'This user does not exist.'}, 404
         
         session_user = current_session.user_id
 
@@ -161,8 +157,8 @@ class ListLogsByUser(Resource):
                     for log in user_logs:
                         logs.append(log)
             if len(logs) == 0:
-                return {'message':'There are no logs for this user yet.'}, 400
-            return {'logs': logs}
-        return {'message':'You are not authorised to view this log.'}, 400
+                return {'message':'There are no logs for this user yet.'}, 404
+            return {'logs': logs}, 200
+        return {'message':'You are not authorised to view this log.'}, 403
 
 

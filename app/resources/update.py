@@ -1,6 +1,5 @@
 from flask_restx import Namespace, Resource, fields
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from flask import abort, jsonify
 
 from models.user_model import User, UserSchema
 from user_functions.record_user_log import record_user_log
@@ -27,15 +26,15 @@ class UpdateUser(Resource):
         my_user = User.fetch_by_id(id)
         user = user_schema.dump(my_user)
         if len(user) == 0:
-            abort(400, 'User does not exist')
+            return {'message':'User does not exist'}, 404
 
         authorised_user = get_jwt_identity()
         if id != authorised_user['id']:
-            abort(400, 'You cannot modify this user! Please log in as this user to modify.')# 403
+            return {'message':'You cannot modify this user! Please log in as this user to modify.'}, 403
 
         data = api.payload
         if not data:
-            abort(400, 'No input data detected')
+            return {'message':'No input data detected'}, 400
 
         email = data['email'].lower()
 
@@ -43,14 +42,14 @@ class UpdateUser(Resource):
         user_to_check = user_schema.dump(db_user)
         if len(user_to_check) > 0:
             if email == user_to_check['email'] and id != user_to_check['id']:
-                abort(400, 'Falied... A user with this email already exists')
+                return {'message':'Falied... A user with this email already exists'}, 400
 
         phone = data['phone']
         db_user = User.fetch_by_phone(phone)
         user_to_check = user_schema.dump(db_user)
         if len(user_to_check) > 0:
             if phone == user_to_check['phone'] and id != user_to_check['id']:
-                abort(400, 'Falied... A user with this phone number already exists')
+                return {'message':'Falied... A user with this phone number already exists'}, 400
 
         full_name = data['full_name'].lower()
 

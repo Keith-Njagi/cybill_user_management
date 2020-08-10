@@ -2,8 +2,6 @@ from datetime import timedelta
 
 from flask_restx import Namespace, Resource, fields
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt_claims
-from flask import abort, jsonify
-from werkzeug.exceptions import BadRequest
 
 from models.user_model import User, UserSchema
 from user_functions.record_user_log import record_user_log
@@ -35,7 +33,7 @@ class UserList(Resource):
             record_user_log(log_user_id, log_method, log_description)
 
             return {'users': users}, 200
-        abort(400, 'You do not have the required permissions!')
+        return {'message':'You do not have the required permissions!'}, 403
 
 @api.route('/<int:id>')
 @api.param('id', 'The user identifier')
@@ -51,7 +49,7 @@ class GetUser(Resource):
             user = user_schema.dump(my_user)
 
             if len(user) == 0:
-                abort(400, 'User does not exist')
+                return {'message': 'User does not exist'}, 404
 
             # Record this event in user's logs
             log_user_id = authorised_user['id']
@@ -73,7 +71,7 @@ class SuspendUser(Resource):
         my_user = User.fetch_by_id(id)
         user = user_schema.dump(my_user)
         if len(user) == 0:
-            abort(400, 'User does not exist')
+            return {'message': 'User does not exist'}, 404
 
         claims = get_jwt_claims()
         authorised_user = get_jwt_identity()
@@ -92,7 +90,7 @@ class SuspendUser(Resource):
             except:
                 return{'message': 'Unable to perform this action'}, 400
 
-        abort(400, 'You do not have the required permissions to modify this user!')
+        return {'message': 'You do not have the required permissions to modify this user!'}, 403
 
 
 @api.route('/restore/<int:id>')
@@ -105,7 +103,7 @@ class RestoreUser(Resource):
         my_user = User.fetch_by_id(id)
         user = user_schema.dump(my_user)
         if len(user) == 0:
-            abort(400, 'User does not exist')
+            return {'message': 'User does not exist'}, 404
 
         claims = get_jwt_claims()
         authorised_user = get_jwt_identity()
@@ -124,7 +122,7 @@ class RestoreUser(Resource):
             except:
                 return{'message': 'Unable to perform this action'}, 400
 
-        abort(400, 'You do not have the required permissions to modify this user!')
+        return {'message':'You do not have the required permissions to modify this user!'}, 403
 
 
 @api.route('/delete/<int:id>')
@@ -137,12 +135,12 @@ class DeleteUser(Resource):
         my_user = User.fetch_by_id(id)
         user = user_schema.dump(my_user)
         if len(user) == 0:
-            abort(400, 'User does not exist')
+            return {'message': 'User does not exist'}, 404
 
         claims = get_jwt_claims()
         authorised_user = get_jwt_identity()
         if not claims['is_admin'] or id != authorised_user['id']: # 403
-            abort(400, 'You do not have the required permissions to delete this user!')
+            return {'message':'You do not have the required permissions to delete this user!'}, 403
 
         User.delete_by_id(id)
 

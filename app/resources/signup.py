@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from werkzeug.security import generate_password_hash
-from flask import request, abort
+from flask import request
 from flask_restx import Namespace, Resource, fields
 from flask_mail import Mail
 from flask_jwt_extended import create_access_token, create_refresh_token
@@ -41,28 +41,28 @@ class RegisterUser(Resource):
             ip = request.environ['HTTP_X_FORWARDED_FOR']
 
         if ip is None or str(ip) == '127.0.0.1' or str(ip) == '172.17.0.1':
-            abort(400, 'This request has been rejected. Please use a recognised device')
+            return {'message': 'This request has been rejected. Please use a recognised device'}, 403
 
         # Compute operating system
         device_operating_system = generate_device_data()
         if 'error' in device_operating_system.keys():
-            abort(400, device_operating_system['error'])
+            return {'message': device_operating_system['error']}, 403
         device_os = device_operating_system['device_os']
        
 
         data = api.payload
         if not data:
-            abort(400, 'No input data detected')
+            return {'message': 'No input data detected'}, 400
 
         email = data['email'].lower()
         user = User.fetch_by_email(email)
         if user:
-            abort(400, 'Falied... A user with this email already exists')
+            return {'message': 'Falied... A user with this email already exists'}, 400
 
         phone = data['phone']
         user = User.fetch_by_phone(phone)
         if user:
-            abort(400, 'Falied... A user with this phone number already exists')
+            return {'message': 'Falied... A user with this phone number already exists'}, 400
 
         full_name = data['full_name'].lower()
         hashed_password = generate_password_hash(data['password'], method='sha256')

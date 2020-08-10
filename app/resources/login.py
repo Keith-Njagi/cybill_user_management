@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from flask import request, abort
+from flask import request
 from flask_restx import Namespace, Resource, fields
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_refresh_token_required
@@ -39,18 +39,18 @@ class Login(Resource):
             ip = request.environ['HTTP_X_FORWARDED_FOR']
 
         if ip is None or str(ip) == '127.0.0.1'or str(ip) == '172.17.0.1':
-            abort(400, 'This request has been rejected. Please use a recognised device')
+            return{'message': 'This request has been rejected. Please use a recognised device'}, 403
 
         # Compute operating system and location
         device_operating_system = generate_device_data()
         if 'error' in device_operating_system.keys():
-            abort(400, device_operating_system['error'])
+            return {'message': device_operating_system['error']}, 403
         device_os = device_operating_system['device_os']
 
 
         data = api.payload
         if not data:
-            abort(400, 'No input data detected')
+            return {'message': 'No input data detected'}, 400
 
         email = data['email']
         this_user = User.fetch_by_email(email)

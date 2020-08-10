@@ -1,5 +1,4 @@
 from werkzeug.security import generate_password_hash
-from flask import request, abort
 from flask_restx import Namespace, Resource, fields
 from flask_jwt_extended import jwt_required, get_jwt_claims, get_jwt_identity
 
@@ -52,7 +51,7 @@ class UserRoleList(Resource):
         claims = get_jwt_claims()
         authorised_user = get_jwt_identity()
         if not claims['is_admin']:
-            abort(400, 'You do not have the required permissions!')
+            return {'message': 'You do not have the required permissions!'}, 403
 
         role_record = UserRole.fetch_by_user_id(id)
         if role_record:
@@ -66,7 +65,7 @@ class UserRoleList(Resource):
             record_user_log(log_user_id, log_method, log_description)
 
             return {'role': user_role}, 200
-        return {'message': 'Record not found'}, 400
+        return {'message': 'Record not found'}, 404
 
 
 
@@ -78,11 +77,11 @@ class UserRoleList(Resource):
         claims = get_jwt_claims()
         authorised_user = get_jwt_identity()
         if not claims['is_admin']:
-            abort(400, 'You do not have the required permissions!')
+            return {'message':'You do not have the required permissions!'}, 403
 
         data = api.payload
         if not data:
-            abort(400, 'No input data detected')
+            return {'message':'No input data detected'}, 400
 
         role_record = UserRole.fetch_by_user_id(id)
         if role_record:
@@ -99,4 +98,4 @@ class UserRoleList(Resource):
             record_user_log(log_user_id, log_method, log_description)
 
             return {'role': user_role}, 200
-        return {'message': 'Record not found'}, 400
+        return {'message': 'Record not found'}, 404
