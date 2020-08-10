@@ -7,7 +7,7 @@ import requests
 from flask_restx import Namespace, Resource, fields
 from werkzeug.security import generate_password_hash
 from flask_jwt_extended import create_access_token, create_refresh_token
-from flask import request, abort, render_template
+from flask import request, render_template
 from .mail import mail, Message
 
 from models.user_model import User, UserSchema
@@ -46,13 +46,13 @@ class SendResetLink(Resource):
         data = api.payload
 
         if not data:
-            abort(400, 'No input data detected')
+            return {'message': 'No input data detected'}, 400
 
         email = data['email'].lower()
         db_user = User.query.filter_by(email=email).first()
         user_to_check = user_schema.dump(db_user)
         if len( user_to_check) == 0:
-            abort(400, 'Failed! Please use the email used to register your account')
+            return {'message': 'Failed! Please use the email used to register your account'}, 404
 
         password_reset = TokenGenerator()
         reset_code =password_reset.token_code
@@ -60,7 +60,6 @@ class SendResetLink(Resource):
         user_id = db_user.id
         password_reset_record = PasswordReset(user_id=user_id, reset_code=reset_code)
         password_reset_record.insert_record()
-        print(reset_token)
         try:
             # Add a html to send along with the email containing a button that redirects to the password reset page
             html_template = render_template('password_reset.html', reset_token=reset_token)
@@ -91,7 +90,7 @@ class CheckTokenValidity(Resource):
             # Check for an existing reset_token with is_expired status as False
             reset_code_record = PasswordReset.fetch_by_reset_code(reset_code=token)
             if not reset_code_record:
-                abort(400, 'Rejected! This reset token does not exist')
+                return{'message':'Rejected! This reset token does not exist'}, 404
 
             set_to_expire = reset_code_record.created + timedelta(minutes=30)
             current_time = datetime.utcnow()
@@ -104,7 +103,7 @@ class CheckTokenValidity(Resource):
                     record_ids.append(record.id)
                 for record_id in record_ids:
                     PasswordReset.expire_token(id=record_id, is_expired=is_expired)
-                abort(400, 'Rejected! Password reset token is expired. Please request a new password reset.')
+                return {'message':'Rejected! Password reset token is expired. Please request a new password reset.'}, 403
 
             if reset_code_record.is_expired == True:
                 user_id = reset_code_record.user_id
@@ -115,7 +114,7 @@ class CheckTokenValidity(Resource):
                     record_ids.append(record.id)
                 for record_id in record_ids:
                     PasswordReset.expire_token(id=record_id, is_expired=is_expired)
-                abort(400, 'Rejected! Password reset token has already been used. Please request a new password reset.')
+                return {'message': 'Rejected! Password reset token has already been used. Please request a new password reset.'}, 403
             return {'message': 'You may type in your new password.'}, 200
         except Exception as e:
             return {'message': 'Operation NOT successful. Please use a valid token!!!'}
@@ -135,12 +134,12 @@ class ResetPassword(Resource):
             ip = request.environ['HTTP_X_FORWARDED_FOR']
 
         if ip is None or str(ip) == '127.0.0.1' or str(ip) == '172.17.0.1':
-            abort(400, 'This request has been rejected. Please use a recognised device')
+            return {'message': 'This request has been rejected. Please use a recognised device'}, 403
 
         # Compute operating system
         device_operating_system = generate_device_data()
         if 'error' in device_operating_system.keys():
-            abort(400, device_operating_system['error'])
+            return {'message': device_operating_system['error']}, 403
         device_os = device_operating_system['device_os']
 
         received_reset_token = reset_token
@@ -150,7 +149,7 @@ class ResetPassword(Resource):
         # Check for an existing reset_token with is_expired status as False
         reset_code_record = PasswordReset.fetch_by_reset_code(reset_code=token)
         if not reset_code_record:
-            abort(400, 'This reset token does not exist')
+            return{'message': 'This reset token does not exist'}, 404
         
         if reset_code_record.is_expired == True:
             user_id = reset_code_record.user_id
@@ -161,7 +160,7 @@ class ResetPassword(Resource):
                 record_ids.append(record.id)
             for record_id in record_ids:
                 PasswordReset.expire_token(id=record_id, is_expired=is_expired)
-            abort(400, 'Password reset token has already been used. Please request a new password reset.')
+            return {'message': 'Password reset token has already been used. Please request a new password reset.'}, 403
 
         user_id = reset_code_record.user_id
         is_expired = True
@@ -175,7 +174,7 @@ class ResetPassword(Resource):
         data = api.payload
 
         if not data:
-            abort(400, 'No input data detected')
+            return {'message': 'No input data detected'}, 400
 
         password = data['password']
         hashed_password = generate_password_hash(data['password'], method='sha256')
