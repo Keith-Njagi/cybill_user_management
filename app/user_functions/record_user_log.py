@@ -1,5 +1,5 @@
 import requests
-log_submission_url = 'https://172.18.0.3:3100/api/logs' # 'http://0.0.0.0:3100/api/logs'
+log_submission_url = 'http://172.18.0.1:3100/api/logs' # 'http://0.0.0.0:3100/api/logs'
 
 def record_user_log(auth_token, method, description):
     payload = {'method': method, 'description': description}
