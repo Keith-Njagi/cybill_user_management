@@ -12,7 +12,6 @@ session_schema = SessionSchema()
 sessions_schema = SessionSchema(many=True)
 
 user_log_model = api.model('UserLog',{ 
-    'user_id': fields.Integer(required=True, description='Authorised User ID'),
     'method': fields.String(required=True, description='Method'),
     'description': fields.String(required=True, description='Description')
 })
@@ -35,20 +34,21 @@ class ListAllLogs(Resource):
             return {'logs': logs}, 200
         return {'message': 'You are not authorised to view this information!'}, 403
 
-    #@jwt_required
+    @jwt_required
     @api.doc('post_user_log')
     @api.expect(user_log_model)
     def post(self):
         '''Post User Log'''
         try:
-            # authorised_user = get_jwt_identity()
-            # user_id = authorised_user['id']
+            authorised_user = get_jwt_identity()
+            user_id = authorised_user['id']
 
             data = api.payload
             if not data:
                 return {'message':'No input data detected'}, 400
 
-            user_id = data['user_id']
+            # user_id = data['user_id']
+
             # fetch last/current session
             current_session = Session.fetch_current_user_session(user_id)
             session_id = current_session.id
