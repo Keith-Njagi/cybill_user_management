@@ -61,11 +61,9 @@ class GetUser(Resource):
             authorization = request.headers.get('Authorization')
             auth_token  = { "Authorization": authorization}
             record_user_log(auth_token, log_method, log_description)
-
-
             
             return {'user': user}, 200
-        return {'message': 'You are not authorised to view this user!'}
+        return {'message': 'You are not authorised to view this user!'}, 403
 
 
 @api.route('/suspend/<int:id>')

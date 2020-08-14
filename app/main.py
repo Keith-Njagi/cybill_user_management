@@ -11,7 +11,7 @@ from models import db, ma
 
 app = Flask(__name__)
 
-app.config.from_object(Development)
+app.config.from_object(Production)
 
 sentry_sdk.init(
     dsn="https://3991c8bcf1314bc48b49c1452e1eaca2@o431070.ingest.sentry.io/5380982",
