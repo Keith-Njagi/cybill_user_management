@@ -198,9 +198,10 @@ class ResetPassword(Resource):
         new_session_record.insert_record()
 
         # Record this event in user's logs
-        log_user_id = this_user.id
         log_method = 'put'
         log_description = 'Password reset'
-        record_user_log(log_user_id, log_method, log_description)
+        
+        auth_token  = { "Authorization": "Bearer %s" % access_token }
+        record_user_log(auth_token, log_method, log_description)
         
         return {'user': user, 'access_token': access_token, "refresh_token": refresh_token}, 200

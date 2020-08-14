@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from flask_restx import Namespace, Resource, fields
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt_claims
+from flask import request
 
 from models.user_model import User, UserSchema
 from user_functions.record_user_log import record_user_log
@@ -27,10 +28,12 @@ class UserList(Resource):
             users = users_schema.dump(my_users)
 
             # Record this event in user's logs
-            log_user_id = authorised_user['id']
             log_method = 'get'
             log_description = 'Fetched all users'
-            record_user_log(log_user_id, log_method, log_description)
+
+            authorization = request.headers.get('Authorization')
+            auth_token  = { "Authorization": authorization}
+            record_user_log(auth_token, log_method, log_description)
 
             return {'users': users}, 200
         return {'message':'You do not have the required permissions!'}, 403
@@ -52,10 +55,14 @@ class GetUser(Resource):
                 return {'message': 'User does not exist'}, 404
 
             # Record this event in user's logs
-            log_user_id = authorised_user['id']
             log_method = 'get'
             log_description = 'Fetched user <' + str(id) + '>'
-            record_user_log(log_user_id, log_method, log_description)
+
+            authorization = request.headers.get('Authorization')
+            auth_token  = { "Authorization": authorization}
+            record_user_log(auth_token, log_method, log_description)
+
+
             
             return {'user': user}, 200
         return {'message': 'You are not authorised to view this user!'}
@@ -81,10 +88,12 @@ class SuspendUser(Resource):
                 User.suspend(id, is_suspended=is_suspended)
 
                 # Record this event in user's logs
-                log_user_id = authorised_user['id']
                 log_method = 'put'
                 log_description = 'Suspended user <' + str(id) + '>'
-                record_user_log(log_user_id, log_method, log_description)
+
+                authorization = request.headers.get('Authorization')
+                auth_token  = { "Authorization": authorization}
+                record_user_log(auth_token, log_method, log_description)
 
                 return {'message': 'User suspended successfuly'}, 200
             except:
@@ -113,10 +122,12 @@ class RestoreUser(Resource):
                 User.restore(id=id, is_suspended=is_suspended)
 
                 # Record this event in user's logs
-                log_user_id = authorised_user['id']
                 log_method = 'put'
                 log_description = 'Restored user <' + str(id) + '>'
-                record_user_log(log_user_id, log_method, log_description)
+
+                authorization = request.headers.get('Authorization')
+                auth_token  = { "Authorization": authorization}
+                record_user_log(auth_token, log_method, log_description)
 
                 return {'message': 'User restored successfuly'}, 200
             except:
@@ -145,9 +156,11 @@ class DeleteUser(Resource):
         User.delete_by_id(id)
 
         # Record this event in user's logs
-        log_user_id = authorised_user['id']
         log_method = 'delete'
         log_description = 'Deleted user <' + str(id) + '>'
-        record_user_log(log_user_id, log_method, log_description)
+
+        authorization = request.headers.get('Authorization')
+        auth_token  = { "Authorization": authorization}
+        record_user_log(auth_token, log_method, log_description)
 
         return {'message': 'User deleted successfuly'}, 200

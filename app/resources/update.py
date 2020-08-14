@@ -1,5 +1,6 @@
 from flask_restx import Namespace, Resource, fields
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask import request
 
 from models.user_model import User, UserSchema
 from user_functions.record_user_log import record_user_log
@@ -59,9 +60,11 @@ class UpdateUser(Resource):
         current_user = user_schema.dump(this_user)
 
         # Record this event in user's logs
-        log_user_id = authorised_user['id']
         log_method = 'put'
         log_description = 'Updated user details'
-        record_user_log(log_user_id, log_method, log_description)
+
+        authorization = request.headers.get('Authorization')
+        auth_token  = { "Authorization": authorization}
+        record_user_log(auth_token, log_method, log_description)
 
         return {'user': current_user}, 200

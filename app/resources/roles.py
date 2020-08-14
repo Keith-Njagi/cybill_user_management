@@ -1,6 +1,7 @@
 from werkzeug.security import generate_password_hash
 from flask_restx import Namespace, Resource, fields
 from flask_jwt_extended import jwt_required, get_jwt_claims, get_jwt_identity
+from flask import request
 
 from models.role_model import Role, RoleSchema
 from models.user_role_model import UserRole, UserRoleSchema
@@ -36,7 +37,11 @@ class RoleList(Resource):
             log_user_id = authorised_user['id']
             log_method = 'get'
             log_description = 'Fetched all roles'
-            record_user_log(log_user_id, log_method, log_description)
+            # record_user_log(log_user_id, log_method, log_description)
+            
+            authorization = request.headers.get('Authorization')
+            auth_token  = { "Authorization": authorization}
+            record_user_log(auth_token, log_method, log_description)
 
             return {'roles':roles}
         return {'message':'You do not have the required permissions!'}, 400
@@ -62,7 +67,11 @@ class UserRoleList(Resource):
             log_user_id = authorised_user['id']
             log_method = 'get'
             log_description = 'Fetched role for user <' + str(id) + '>'
-            record_user_log(log_user_id, log_method, log_description)
+            # record_user_log(log_user_id, log_method, log_description)
+            
+            authorization = request.headers.get('Authorization')
+            auth_token  = { "Authorization": authorization}
+            record_user_log(auth_token, log_method, log_description)
 
             return {'role': user_role}, 200
         return {'message': 'Record not found'}, 404
@@ -92,10 +101,11 @@ class UserRoleList(Resource):
             user_role = role_record.role.role
 
             # Record this event in user's logs
-            log_user_id = authorised_user['id']
             log_method = 'put'
             log_description = 'Updated role for user <' + str(id) + '>'
-            record_user_log(log_user_id, log_method, log_description)
 
+            authorization = request.headers.get('Authorization')
+            auth_token  = { "Authorization": authorization}
+            record_user_log(auth_token, log_method, log_description)
             return {'role': user_role}, 200
         return {'message': 'Record not found'}, 404
