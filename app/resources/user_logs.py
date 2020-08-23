@@ -21,21 +21,27 @@ user_log_model = api.model('UserLog',{
 @api.route('')
 class ListAllLogs(Resource):
     @jwt_required
-    @api.doc('list_all_user_logs')
+    @api.doc('List all user logs')
     def get(self):
         '''List All Logs'''
-        claims = get_jwt_claims()
-        authorised_user = get_jwt_identity()
-        if claims['is_admin']:
-            my_logs = UserLog.fetch_all()
-            logs = user_logs_schema.dump(my_logs)
-            if len(logs) == 0:
-                return {'message': 'No user logs created yet.'}, 404
-            return {'logs': logs}, 200
-        return {'message': 'You are not authorised to view this information!'}, 403
+        try:
+            claims = get_jwt_claims()
+            authorised_user = get_jwt_identity()
+            if claims['is_admin']:
+                my_logs = UserLog.fetch_all()
+                logs = user_logs_schema.dump(my_logs)
+                if len(logs) == 0:
+                    return {'message': 'No user logs created yet.'}, 404
+                return {'logs': logs}, 200
+            return {'message': 'You are not authorised to view this information!'}, 403
+        except Exception as e:
+            print('========================================')
+            print('error description: ', e)
+            print('========================================')
+            return {'message': 'Could not fetch user logs.'}, 500
 
     @jwt_required
-    @api.doc('post_user_log')
+    @api.doc('Post user log')
     @api.expect(user_log_model)
     def post(self):
         '''Post User Log'''
@@ -62,9 +68,9 @@ class ListAllLogs(Resource):
             return{'message':'User log added successfully'}, 201
         except Exception as e:
             print('========================================')
-            print('User Log submission error: ', e)
+            print('error description: ', e)
             print('========================================')
-            return {'message': 'Couldn\'t submit user log to database'}, 400
+            return {'message': 'Could not submit user log to database.'}, 500
 
 
 
@@ -73,23 +79,29 @@ class ListAllLogs(Resource):
 @api.param('id', 'The user log identifier')
 class GetLog(Resource):
     @jwt_required
-    @api.doc('get_specific_log')
+    @api.doc('Get specific log')
     def get(self, id):
         '''Get specific Log'''
-        claims = get_jwt_claims()
-        authorised_user = get_jwt_identity()
-        user_id = authorised_user['id']
+        try:
+            claims = get_jwt_claims()
+            authorised_user = get_jwt_identity()
+            user_id = authorised_user['id']
 
-        db_user_log = UserLog.fetch_by_id(id)
-        user_log = user_log_schema.dump(db_user_log)
-        if len(user_log) == 0:
-            return{'message':'This user log does not exist.'}, 404
+            db_user_log = UserLog.fetch_by_id(id)
+            user_log = user_log_schema.dump(db_user_log)
+            if len(user_log) == 0:
+                return{'message':'This user log does not exist.'}, 404
 
-        requested_session = Session.fetch_by_id(id=db_user_log.session_id)
+            requested_session = Session.fetch_by_id(id=db_user_log.session_id)
 
-        if authorised_user['privileges'] == 'Customer care' or user_id == requested_session.user_id  or claims['is_admin'] :
-            return {'log': user_log}, 200
-        return {'message':'You are not authorised to view this log.'}, 403
+            if authorised_user['privileges'] == 'Customer care' or user_id == requested_session.user_id  or claims['is_admin'] :
+                return {'log': user_log}, 200
+            return {'message':'You are not authorised to view this log.'}, 403
+        except Exception as e:
+            print('========================================')
+            print('error description: ', e)
+            print('========================================')
+            return {'message': 'Could not fetch user log.'}, 500
 
 
 # get all logs by session - User, Admin, Customer care
@@ -97,29 +109,35 @@ class GetLog(Resource):
 @api.param('session_id', 'The session identifier')
 class ListLogsBySession(Resource):
     @jwt_required
-    @api.doc('list_logs_by_session')
+    @api.doc('List logs by session')
     def get(self, session_id):
         '''List Logs by Session'''
-        claims = get_jwt_claims()
-        authorised_user = get_jwt_identity()
-        user_id = authorised_user['id']
+        try:
+            claims = get_jwt_claims()
+            authorised_user = get_jwt_identity()
+            user_id = authorised_user['id']
 
-        # fetch last/current session
-        current_session = Session.fetch_current_user_session(user_id)
-        session_user = current_session.user_id
-        
-        requested_session = Session.fetch_by_id(id=session_id)
-        session = session_schema.dump(requested_session)
-        if len(session) == 0:
-            return {'message': 'The requested session does not exist!'}, 404
+            # fetch last/current session
+            current_session = Session.fetch_current_user_session(user_id)
+            session_user = current_session.user_id
+            
+            requested_session = Session.fetch_by_id(id=session_id)
+            session = session_schema.dump(requested_session)
+            if len(session) == 0:
+                return {'message': 'The requested session does not exist!'}, 404
 
-        if authorised_user['privileges'] == 'Customer care' or requested_session.user_id == session_user  or claims['is_admin'] :
-            db_user_logs = UserLog.fetch_by_session_id(session_id)
-            user_logs = user_logs_schema.dump(db_user_logs)
-            if len(user_logs) == 0:
-                return{'message':'These user logs do not exist.'}, 404
-            return {'logs': user_logs}, 200
-        return {'message':'You are not authorised to view this log.'}, 403
+            if authorised_user['privileges'] == 'Customer care' or requested_session.user_id == session_user  or claims['is_admin'] :
+                db_user_logs = UserLog.fetch_by_session_id(session_id)
+                user_logs = user_logs_schema.dump(db_user_logs)
+                if len(user_logs) == 0:
+                    return{'message':'These user logs do not exist.'}, 404
+                return {'logs': user_logs}, 200
+            return {'message':'You are not authorised to view this log.'}, 403
+        except Exception as e:
+            print('========================================')
+            print('error description: ', e)
+            print('========================================')
+            return {'message': 'Could not get user logs.'}, 500
 
 
 # get all logs by user - User, Admin, Customer care
@@ -127,38 +145,44 @@ class ListLogsBySession(Resource):
 @api.param('user_id', 'The user identifier')
 class ListLogsByUser(Resource):
     @jwt_required
-    @api.doc('list_logs_by_user')
+    @api.doc('List logs by user')
     def get(self, user_id):
         '''List Logs by User'''
-        claims = get_jwt_claims()
-        authorised_user = get_jwt_identity()
-        user = authorised_user['id']
+        try:
+            claims = get_jwt_claims()
+            authorised_user = get_jwt_identity()
+            user = authorised_user['id']
 
-        # fetch last/current active session
-        current_session = Session.fetch_current_user_session(user_id)
-        this_session = session_schema.dump(current_session)
-        if len(this_session) == 0:
-                return {'message':'This user does not exist.'}, 404
-        
-        session_user = current_session.user_id
+            # fetch last/current active session
+            current_session = Session.fetch_current_user_session(user_id)
+            this_session = session_schema.dump(current_session)
+            if len(this_session) == 0:
+                    return {'message':'This user does not exist.'}, 404
+            
+            session_user = current_session.user_id
 
-        if authorised_user['privileges'] == 'Customer care' or user == user_id  or claims['is_admin'] :
-            db_sessions = Session.fetch_by_user_id(user_id)
+            if authorised_user['privileges'] == 'Customer care' or user == user_id  or claims['is_admin'] :
+                db_sessions = Session.fetch_by_user_id(user_id)
 
-            session_ids = set()
-            logs = []
-            for session in db_sessions:
-                session_ids.add(session.id)
-            print('Session IDS: ', session_ids)
-            for session_id in session_ids:
-                db_user_logs = UserLog.fetch_by_session_id(session_id)
-                user_logs = user_logs_schema.dump(db_user_logs)
-                if len(user_logs) != 0:
-                    for log in user_logs:
-                        logs.append(log)
-            if len(logs) == 0:
-                return {'message':'There are no logs for this user yet.'}, 404
-            return {'logs': logs}, 200
-        return {'message':'You are not authorised to view this log.'}, 403
+                session_ids = set()
+                logs = []
+                for session in db_sessions:
+                    session_ids.add(session.id)
+                print('Session IDS: ', session_ids)
+                for session_id in session_ids:
+                    db_user_logs = UserLog.fetch_by_session_id(session_id)
+                    user_logs = user_logs_schema.dump(db_user_logs)
+                    if len(user_logs) != 0:
+                        for log in user_logs:
+                            logs.append(log)
+                if len(logs) == 0:
+                    return {'message':'There are no logs for this user yet.'}, 404
+                return {'logs': logs}, 200
+            return {'message':'You are not authorised to view this log.'}, 403
+        except Exception as e:
+            print('========================================')
+            print('error description: ', e)
+            print('========================================')
+            return {'message': 'Could not get user logs.'}, 500
 
 

@@ -11,36 +11,50 @@ sessions_schema = SessionSchema(many=True)
 
 @api.route('')
 class SessionList(Resource):
-    @api.doc('list_user_sessions')
+    @api.doc('List sessions')
     @jwt_required
     def get(self):
-        '''List User Sessions'''
-        claims = get_jwt_claims()
-        authorised_user = get_jwt_identity()
-        if authorised_user['privileges'] == 'Customer care' or claims['is_admin'] :
-            my_sessions = Session.fetch_all()
+        '''List Sessions'''
+        try:
+            claims = get_jwt_claims()
+            authorised_user = get_jwt_identity()
+            if authorised_user['privileges'] == 'Customer care' or claims['is_admin'] :
+                my_sessions = Session.fetch_all()
+                sessions = sessions_schema.dump(my_sessions)
+                return {'sessions': sessions}, 200
+            user_id = authorised_user['id']
+            my_sessions = Session.fetch_by_user_id(user_id)
             sessions = sessions_schema.dump(my_sessions)
-            return {'sessions': sessions}, 200
-        user_id = authorised_user['id']
-        my_sessions = Session.fetch_by_user_id(user_id)
-        sessions = sessions_schema.dump(my_sessions)
-        return { 'sessions': sessions}, 200
+            return { 'sessions': sessions}, 200
+        except Exception as e:
+            print('========================================')
+            print('error description: ', e)
+            print('========================================')
+            return {'message': 'Could not get sessions.'}, 500
+
 
 
 @api.route('/user/<int:user_id>')
+@api.param('user_id', 'The user identifier')
 class UserSessionList(Resource):
-    @api.doc('list_user_sessions')
+    @api.doc('List user sessions')
     @jwt_required
     def get(self, user_id):
         '''List User Sessions'''
-        claims = get_jwt_claims()
-        authorised_user = get_jwt_identity()
+        try:
+            claims = get_jwt_claims()
+            authorised_user = get_jwt_identity()
 
-        if authorised_user['privileges'] == 'Customer care' or user_id == authorised_user['id']  or claims['is_admin'] :
-            my_sessions = Session.fetch_by_user_id(user_id)
-            if my_sessions:
-                sessions = sessions_schema.dump(my_sessions)
+            if authorised_user['privileges'] == 'Customer care' or user_id == authorised_user['id']  or claims['is_admin'] :
+                my_sessions = Session.fetch_by_user_id(user_id)
+                if my_sessions:
+                    sessions = sessions_schema.dump(my_sessions)
 
-                return {'sessions': sessions}, 200
-            return {'message': 'No sessions found'}, 404
-        return {'message': 'You are not authorised to view these sessions.'}, 403
+                    return {'sessions': sessions}, 200
+                return {'message': 'No sessions found'}, 404
+            return {'message': 'You are not authorised to view these sessions.'}, 403
+        except Exception as e:
+            print('========================================')
+            print('error description: ', e)
+            print('========================================')
+            return {'message': 'Could not get user sessions.'}, 500

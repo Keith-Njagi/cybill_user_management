@@ -16,60 +16,72 @@ users_schema = UserSchema(many=True)
 
 @api.route('')
 class UserList(Resource):
-    @api.doc('list_users')
+    @api.doc('List all users')
     @jwt_required
     def get(self):
         '''List all Users'''
-        claims = get_jwt_claims()
-        print(claims)
-        authorised_user = get_jwt_identity()
-        if authorised_user['privileges'] == 'Customer care' or claims['is_admin'] :
-            my_users = User.fetch_all()
-            users = users_schema.dump(my_users)
+        try:
+            claims = get_jwt_claims()
+            print(claims)
+            authorised_user = get_jwt_identity()
+            if authorised_user['privileges'] == 'Customer care' or claims['is_admin'] :
+                my_users = User.fetch_all()
+                users = users_schema.dump(my_users)
 
-            # Record this event in user's logs
-            log_method = 'get'
-            log_description = 'Fetched all users'
+                # Record this event in user's logs
+                log_method = 'get'
+                log_description = 'Fetched all users'
 
-            authorization = request.headers.get('Authorization')
-            auth_token  = { "Authorization": authorization}
-            record_user_log(auth_token, log_method, log_description)
+                authorization = request.headers.get('Authorization')
+                auth_token  = { "Authorization": authorization}
+                record_user_log(auth_token, log_method, log_description)
 
-            return {'users': users}, 200
-        return {'message':'You do not have the required permissions!'}, 403
+                return {'users': users}, 200
+            return {'message':'You do not have the required permissions!'}, 403
+        except Exception as e:
+            print('========================================')
+            print('error description: ', e)
+            print('========================================')
+            return {'message': 'Could not get users.'}, 500
 
 @api.route('/<int:id>')
 @api.param('id', 'The user identifier')
 class GetUser(Resource):
-    @api.doc('get_user')
+    @api.doc('Get specific user')
     @jwt_required
     def get(self, id):
         '''Get Specific User'''
-        claims = get_jwt_claims()
-        authorised_user = get_jwt_identity()
-        if authorised_user['privileges'] == 'Customer care' or id == authorised_user['id']  or claims['is_admin'] :
-            my_user = User.fetch_by_id(id)
-            user = user_schema.dump(my_user)
+        try:
+            claims = get_jwt_claims()
+            authorised_user = get_jwt_identity()
+            if authorised_user['privileges'] == 'Customer care' or id == authorised_user['id']  or claims['is_admin'] :
+                my_user = User.fetch_by_id(id)
+                user = user_schema.dump(my_user)
 
-            if len(user) == 0:
-                return {'message': 'User does not exist'}, 404
+                if len(user) == 0:
+                    return {'message': 'User does not exist'}, 404
 
-            # Record this event in user's logs
-            log_method = 'get'
-            log_description = 'Fetched user <' + str(id) + '>'
+                # Record this event in user's logs
+                log_method = 'get'
+                log_description = 'Fetched user <' + str(id) + '>'
 
-            authorization = request.headers.get('Authorization')
-            auth_token  = { "Authorization": authorization}
-            record_user_log(auth_token, log_method, log_description)
-            
-            return {'user': user}, 200
-        return {'message': 'You are not authorised to view this user!'}, 403
+                authorization = request.headers.get('Authorization')
+                auth_token  = { "Authorization": authorization}
+                record_user_log(auth_token, log_method, log_description)
+                
+                return {'user': user}, 200
+            return {'message': 'You are not authorised to view this user!'}, 403
+        except Exception as e:
+            print('========================================')
+            print('error description: ', e)
+            print('========================================')
+            return {'message': 'Could not get user.'}, 500
 
 
 @api.route('/suspend/<int:id>')
 @api.param('id', 'The user identifier')
 class SuspendUser(Resource):
-    @api.doc('suspend_user')
+    @api.doc('Suspend user')
     @jwt_required
     def put(self, id):
         '''Suspend User'''
@@ -94,8 +106,11 @@ class SuspendUser(Resource):
                 record_user_log(auth_token, log_method, log_description)
 
                 return {'message': 'User suspended successfuly'}, 200
-            except:
-                return{'message': 'Unable to perform this action'}, 400
+            except Exception as e:
+                print('========================================')
+                print('error description: ', e)
+                print('========================================')
+                return {'message': 'Could not suspend user.'}, 500
 
         return {'message': 'You do not have the required permissions to modify this user!'}, 403
 
@@ -103,7 +118,7 @@ class SuspendUser(Resource):
 @api.route('/restore/<int:id>')
 @api.param('id', 'The user identifier')
 class RestoreUser(Resource):
-    @api.doc('restore_user')
+    @api.doc('Restore user')
     @jwt_required
     def put(self, id):
         '''Restore User'''
@@ -128,8 +143,11 @@ class RestoreUser(Resource):
                 record_user_log(auth_token, log_method, log_description)
 
                 return {'message': 'User restored successfuly'}, 200
-            except:
-                return{'message': 'Unable to perform this action'}, 400
+            except Exception as e:
+                print('========================================')
+                print('error description: ', e)
+                print('========================================')
+                return{'message': 'Unable to restore user.'}, 500
 
         return {'message':'You do not have the required permissions to modify this user!'}, 403
 
@@ -137,28 +155,34 @@ class RestoreUser(Resource):
 @api.route('/delete/<int:id>')
 @api.param('id', 'The user identifier')
 class DeleteUser(Resource):
-    @api.doc('delete_user')
+    @api.doc('Delete user')
     @jwt_required
     def delete(self, id):
         '''Delete User'''
-        my_user = User.fetch_by_id(id)
-        user = user_schema.dump(my_user)
-        if len(user) == 0:
-            return {'message': 'User does not exist'}, 404
+        try:
+            my_user = User.fetch_by_id(id)
+            user = user_schema.dump(my_user)
+            if len(user) == 0:
+                return {'message': 'User does not exist'}, 404
 
-        claims = get_jwt_claims()
-        authorised_user = get_jwt_identity()
-        if not claims['is_admin'] or id != authorised_user['id']: # 403
-            return {'message':'You do not have the required permissions to delete this user!'}, 403
+            claims = get_jwt_claims()
+            authorised_user = get_jwt_identity()
+            if not claims['is_admin'] or id != authorised_user['id']: # 403
+                return {'message':'You do not have the required permissions to delete this user!'}, 403
 
-        User.delete_by_id(id)
+            User.delete_by_id(id)
 
-        # Record this event in user's logs
-        log_method = 'delete'
-        log_description = 'Deleted user <' + str(id) + '>'
+            # Record this event in user's logs
+            log_method = 'delete'
+            log_description = 'Deleted user <' + str(id) + '>'
 
-        authorization = request.headers.get('Authorization')
-        auth_token  = { "Authorization": authorization}
-        record_user_log(auth_token, log_method, log_description)
+            authorization = request.headers.get('Authorization')
+            auth_token  = { "Authorization": authorization}
+            record_user_log(auth_token, log_method, log_description)
 
-        return {'message': 'User deleted successfuly'}, 200
+            return {'message': 'User deleted successfuly'}, 200
+        except Exception as e:
+            print('========================================')
+            print('error description: ', e)
+            print('========================================')
+            return {'message': 'Could not delete user.'}, 500
