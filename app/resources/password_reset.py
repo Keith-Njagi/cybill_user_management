@@ -39,7 +39,7 @@ log_submission_url = 'http://127.0.0.1:3100/api/logs'
 
 @api.route('/forgot')
 class SendResetLink(Resource):
-    @api.doc('create_reset_link')
+    @api.doc('Send email with password reset link')
     @api.expect(reset_token_model)
     def post(self):
         '''Send email with password reset link'''
@@ -73,13 +73,13 @@ class SendResetLink(Resource):
             return {'message':'Please check your mail', 'reset_token':reset_token}, 200 # the reset token should be removed in production
         except Exception as e:
             print('========================================')
-            print('mail error description: ', e)
+            print('error description: ', e)
             print('========================================')
-            return {'message': 'Couldn\'t send mail'}, 400
+            return {'message': 'Could not send mail'}, 500
 
 @api.route('/token/validity/<string:reset_token>')
 class CheckTokenValidity(Resource):
-    @api.doc('check_reset_password_token_validity')
+    @api.doc('Verify password reset token')
     def get(self, reset_token):
         '''Verify Password Reset Token'''
         received_reset_token = reset_token
@@ -117,41 +117,56 @@ class CheckTokenValidity(Resource):
                 return {'message': 'Rejected! Password reset token has already been used. Please request a new password reset.'}, 403
             return {'message': 'You may type in your new password.'}, 200
         except Exception as e:
-            return {'message': 'Operation NOT successful. Please use a valid token!!!'}
+            print('========================================')
+            print('error description: ', e)
+            print('========================================')
+            return {'message': 'Operation NOT successful. Please use a valid token!!!'}, 500
+
 
 
 @api.route('/reset/<string:reset_token>')
 class ResetPassword(Resource):
-    @api.doc('reset_password')
+    @api.doc('Reset password')
     @api.expect(password_reset_model)
     def put(self, reset_token):
         '''Reset User Password'''
         # Get User-agent and ip address 
-        my_ip = request.environ.get('HTTP_X_FORWARDED_FOR')
-        if my_ip is None:
-            ip = request.environ['REMOTE_ADDR']
-        else:
-            ip = request.environ['HTTP_X_FORWARDED_FOR']
+        try:
+            my_ip = request.environ.get('HTTP_X_FORWARDED_FOR')
+            if my_ip is None:
+                ip = request.environ['REMOTE_ADDR']
+            else:
+                ip = request.environ['HTTP_X_FORWARDED_FOR']
 
-        if ip is None or str(ip) == '127.0.0.1' or str(ip) == '172.17.0.1':
-            return {'message': 'This request has been rejected. Please use a recognised device'}, 403
+            if ip is None or str(ip) == '127.0.0.1' or str(ip) == '172.17.0.1':
+                return {'message': 'This request has been rejected. Please use a recognised device'}, 403
 
-        # Compute operating system
-        device_operating_system = generate_device_data()
-        if 'error' in device_operating_system.keys():
-            return {'message': device_operating_system['error']}, 403
-        device_os = device_operating_system['device_os']
+            # Compute operating system
+            device_operating_system = generate_device_data()
+            if 'error' in device_operating_system.keys():
+                return {'message': device_operating_system['error']}, 403
+            device_os = device_operating_system['device_os']
 
-        received_reset_token = reset_token
-        TokenGenerator.decode_token(received_reset_token)
-        token = TokenGenerator.token
+            received_reset_token = reset_token
+            TokenGenerator.decode_token(received_reset_token)
+            token = TokenGenerator.token
 
-        # Check for an existing reset_token with is_expired status as False
-        reset_code_record = PasswordReset.fetch_by_reset_code(reset_code=token)
-        if not reset_code_record:
-            return{'message': 'This reset token does not exist'}, 404
-        
-        if reset_code_record.is_expired == True:
+            # Check for an existing reset_token with is_expired status as False
+            reset_code_record = PasswordReset.fetch_by_reset_code(reset_code=token)
+            if not reset_code_record:
+                return{'message': 'This reset token does not exist'}, 404
+            
+            if reset_code_record.is_expired == True:
+                user_id = reset_code_record.user_id
+                is_expired = True
+                user_records = PasswordReset.fetch_by_user_id(user_id)
+                record_ids = []
+                for record in user_records:
+                    record_ids.append(record.id)
+                for record_id in record_ids:
+                    PasswordReset.expire_token(id=record_id, is_expired=is_expired)
+                return {'message': 'Password reset token has already been used. Please request a new password reset.'}, 403
+
             user_id = reset_code_record.user_id
             is_expired = True
             user_records = PasswordReset.fetch_by_user_id(user_id)
@@ -160,48 +175,43 @@ class ResetPassword(Resource):
                 record_ids.append(record.id)
             for record_id in record_ids:
                 PasswordReset.expire_token(id=record_id, is_expired=is_expired)
-            return {'message': 'Password reset token has already been used. Please request a new password reset.'}, 403
 
-        user_id = reset_code_record.user_id
-        is_expired = True
-        user_records = PasswordReset.fetch_by_user_id(user_id)
-        record_ids = []
-        for record in user_records:
-            record_ids.append(record.id)
-        for record_id in record_ids:
-            PasswordReset.expire_token(id=record_id, is_expired=is_expired)
+            data = api.payload
 
-        data = api.payload
+            if not data:
+                return {'message': 'No input data detected'}, 400
 
-        if not data:
-            return {'message': 'No input data detected'}, 400
+            password = data['password']
+            hashed_password = generate_password_hash(data['password'], method='sha256')
+            User.update_password(id=user_id, password=hashed_password)
 
-        password = data['password']
-        hashed_password = generate_password_hash(data['password'], method='sha256')
-        User.update_password(id=user_id, password=hashed_password)
+            this_user = User.fetch_by_id(id=user_id)
+            user = user_schema.dump(this_user)
 
-        this_user = User.fetch_by_id(id=user_id)
-        user = user_schema.dump(this_user)
+            user_id = this_user.id
 
-        user_id = this_user.id
+            # fetch User role
+            user_role = UserRole.fetch_by_user_id(user_id)
+            privileges = user_role.role.role
+            # Create access token
+            expiry_time = timedelta(minutes=30)
+            my_identity = {'id':this_user.id, 'privileges':privileges}
+            access_token = create_access_token(identity=my_identity, expires_delta=expiry_time)
+            refresh_token = create_refresh_token(my_identity)
+            # Save session info to db
+            new_session_record = Session(user_ip_address=ip, device_operating_system=device_os, user_id=user_id)    
+            new_session_record.insert_record()
 
-        # fetch User role
-        user_role = UserRole.fetch_by_user_id(user_id)
-        privileges = user_role.role.role
-        # Create access token
-        expiry_time = timedelta(minutes=30)
-        my_identity = {'id':this_user.id, 'privileges':privileges}
-        access_token = create_access_token(identity=my_identity, expires_delta=expiry_time)
-        refresh_token = create_refresh_token(my_identity)
-        # Save session info to db
-        new_session_record = Session(user_ip_address=ip, device_operating_system=device_os, user_id=user_id)    
-        new_session_record.insert_record()
-
-        # Record this event in user's logs
-        log_method = 'put'
-        log_description = 'Password reset'
-        
-        auth_token  = { "Authorization": "Bearer %s" % access_token }
-        record_user_log(auth_token, log_method, log_description)
-        
-        return {'user': user, 'access_token': access_token, "refresh_token": refresh_token}, 200
+            # Record this event in user's logs
+            log_method = 'put'
+            log_description = 'Password reset'
+            
+            auth_token  = { "Authorization": "Bearer %s" % access_token }
+            record_user_log(auth_token, log_method, log_description)
+            
+            return {'user': user, 'access_token': access_token, "refresh_token": refresh_token}, 200
+        except Exception as e:
+            print('========================================')
+            print('error description: ', e)
+            print('========================================')
+            return {'message': 'Could not reset password.'}, 500
