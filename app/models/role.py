@@ -10,7 +10,7 @@ class RoleModel(db.Model):
     created = db.Column(db.DateTime, default=datetime.utcnow(), nullable=False)
     updated = db.Column(db.DateTime, onupdate=datetime.utcnow(), nullable=True)
 
-    user_roles = db.relationship('UserRoleModel', lazy=dynamic)
+    user_roles = db.relationship('UserRoleModel', lazy='dynamic')
 
     def insert_record(self) -> None:
         db.session.add(self)

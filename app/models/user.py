@@ -14,9 +14,9 @@ class UserModel(db.Model):
     created = db.Column(db.DateTime, default=datetime.utcnow(), nullable=False)
     updated = db.Column(db.DateTime, onupdate=datetime.utcnow(), nullable=True)
 
-    user_roles = db.relationship('UserRoleModel', lazy=dynamic)
-    password_resets = db.relationship('PasswordResetModel', lazy=dynamic)
-    sessions = db.relationship('SessionModel', lazy=dynamic)
+    user_roles = db.relationship('UserRoleModel', lazy='dynamic')
+    password_resets = db.relationship('PasswordResetModel', lazy='dynamic')
+    sessions = db.relationship('SessionModel', lazy='dynamic')
 
     def insert_record(self) -> None:
         db.session.add(self)
