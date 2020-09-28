@@ -10,10 +10,12 @@ from flask_jwt_extended import create_access_token, create_refresh_token
 from flask import request, render_template
 from .mail import mail, Message
 
-from models.user_model import User, UserSchema
-from models.password_reset_model import PasswordReset, PasswordResetSchema
-from models.user_role_model import UserRole, UserRoleSchema
-from models.session_model import Session
+from models.user import UserModel
+from models.password_reset import PasswordResetModel
+from models.user_role import UserRoleModel
+from models.session import SessionModel
+from schemas.user import UserSchema
+from schemas.password_reset import PasswordResetSchema
 from user_functions.token_generator import TokenGenerator
 from user_functions.user_role_manager import UserPrivilege
 from user_functions.compute_session_data import generate_device_data
@@ -25,7 +27,6 @@ password_reset_schema = PasswordResetSchema()
 password_resets_schema = PasswordResetSchema(many=True)
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
-user_role_schema = UserRoleSchema()
 
 reset_token_model = api.model('PasswordReset', {
     'email': fields.String(required=True, description='Email registered under one of the accounts')
@@ -49,7 +50,7 @@ class SendResetLink(Resource):
             return {'message': 'No input data detected'}, 400
 
         email = data['email'].lower()
-        db_user = User.query.filter_by(email=email).first()
+        db_user = UserModel.query.filter_by(email=email).first()
         user_to_check = user_schema.dump(db_user)
         if len( user_to_check) == 0:
             return {'message': 'Failed! Please use the email used to register your account'}, 404
@@ -58,7 +59,7 @@ class SendResetLink(Resource):
         reset_code =password_reset.token_code
         reset_token = password_reset.url_token
         user_id = db_user.id
-        password_reset_record = PasswordReset(user_id=user_id, reset_code=reset_code)
+        password_reset_record = PasswordResetModel(user_id=user_id, reset_code=reset_code)
         password_reset_record.insert_record()
         try:
             # Add a html to send along with the email containing a button that redirects to the password reset page
@@ -80,7 +81,7 @@ class SendResetLink(Resource):
 @api.route('/token/validity/<string:reset_token>')
 class CheckTokenValidity(Resource):
     @api.doc('Verify password reset token')
-    def get(self, reset_token):
+    def get(self, reset_token:str):
         '''Verify Password Reset Token'''
         received_reset_token = reset_token
         try:
@@ -88,7 +89,7 @@ class CheckTokenValidity(Resource):
             token = TokenGenerator.token
 
             # Check for an existing reset_token with is_expired status as False
-            reset_code_record = PasswordReset.fetch_by_reset_code(reset_code=token)
+            reset_code_record = PasswordResetModel.fetch_by_reset_code(reset_code=token)
             if not reset_code_record:
                 return{'message':'Rejected! This reset token does not exist'}, 404
 
@@ -97,23 +98,23 @@ class CheckTokenValidity(Resource):
             if set_to_expire <= current_time:
                 user_id = reset_code_record.user_id
                 is_expired = True
-                user_records = PasswordReset.fetch_by_user_id(user_id)
+                user_records = PasswordResetModel.fetch_by_user_id(user_id)
                 record_ids = []
                 for record in user_records:
                     record_ids.append(record.id)
                 for record_id in record_ids:
-                    PasswordReset.expire_token(id=record_id, is_expired=is_expired)
+                    PasswordResetModel.expire_token(id=record_id, is_expired=is_expired)
                 return {'message':'Rejected! Password reset token is expired. Please request a new password reset.'}, 403
 
             if reset_code_record.is_expired == True:
                 user_id = reset_code_record.user_id
                 is_expired = True
-                user_records = PasswordReset.fetch_by_user_id(user_id)
+                user_records = PasswordResetModel.fetch_by_user_id(user_id)
                 record_ids = []
                 for record in user_records:
                     record_ids.append(record.id)
                 for record_id in record_ids:
-                    PasswordReset.expire_token(id=record_id, is_expired=is_expired)
+                    PasswordResetModel.expire_token(id=record_id, is_expired=is_expired)
                 return {'message': 'Rejected! Password reset token has already been used. Please request a new password reset.'}, 403
             return {'message': 'You may type in your new password.'}, 200
         except Exception as e:
@@ -123,12 +124,11 @@ class CheckTokenValidity(Resource):
             return {'message': 'Operation NOT successful. Please use a valid token!!!'}, 500
 
 
-
 @api.route('/reset/<string:reset_token>')
 class ResetPassword(Resource):
     @api.doc('Reset password')
     @api.expect(password_reset_model)
-    def put(self, reset_token):
+    def put(self, reset_token:str):
         '''Reset User Password'''
         # Get User-agent and ip address 
         try:
@@ -152,29 +152,29 @@ class ResetPassword(Resource):
             token = TokenGenerator.token
 
             # Check for an existing reset_token with is_expired status as False
-            reset_code_record = PasswordReset.fetch_by_reset_code(reset_code=token)
+            reset_code_record = PasswordResetModel.fetch_by_reset_code(reset_code=token)
             if not reset_code_record:
                 return{'message': 'This reset token does not exist'}, 404
             
             if reset_code_record.is_expired == True:
                 user_id = reset_code_record.user_id
                 is_expired = True
-                user_records = PasswordReset.fetch_by_user_id(user_id)
+                user_records = PasswordResetModel.fetch_by_user_id(user_id)
                 record_ids = []
                 for record in user_records:
                     record_ids.append(record.id)
                 for record_id in record_ids:
-                    PasswordReset.expire_token(id=record_id, is_expired=is_expired)
+                    PasswordResetModel.expire_token(id=record_id, is_expired=is_expired)
                 return {'message': 'Password reset token has already been used. Please request a new password reset.'}, 403
 
             user_id = reset_code_record.user_id
             is_expired = True
-            user_records = PasswordReset.fetch_by_user_id(user_id)
+            user_records = PasswordResetModel.fetch_by_user_id(user_id)
             record_ids = []
             for record in user_records:
                 record_ids.append(record.id)
             for record_id in record_ids:
-                PasswordReset.expire_token(id=record_id, is_expired=is_expired)
+                PasswordResetModel.expire_token(id=record_id, is_expired=is_expired)
 
             data = api.payload
 
@@ -183,20 +183,20 @@ class ResetPassword(Resource):
 
             password = data['password']
             hashed_password = generate_password_hash(data['password'], method='sha256')
-            User.update_password(id=user_id, password=hashed_password)
+            UserModel.update_password(id=user_id, password=hashed_password)
 
-            this_user = User.fetch_by_id(id=user_id)
+            this_user = UserModel.fetch_by_id(id=user_id)
             user = user_schema.dump(this_user)
 
             user_id = this_user.id
 
             # fetch User role
-            user_role = UserRole.fetch_by_user_id(user_id)
+            user_role = UserRoleModel.fetch_by_user_id(user_id)
             privileges = user_role.role.role
             # Create access token
             expiry_time = timedelta(minutes=30)
             my_identity = {'id':this_user.id, 'privileges':privileges}
-            access_token = create_access_token(identity=my_identity, expires_delta=expiry_time)
+            access_token = create_access_token(identity=my_identity, expires_delta=expiry_time, fresh=True)
             refresh_token = create_refresh_token(my_identity)
             # Save session info to db
             new_session_record = Session(user_ip_address=ip, device_operating_system=device_os, user_id=user_id)    

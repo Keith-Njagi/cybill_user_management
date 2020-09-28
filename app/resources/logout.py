@@ -1,13 +1,9 @@
 from flask_restx import Namespace, Resource
 from flask_jwt_extended import jwt_required, get_raw_jwt, get_jwt_identity
 
-from models.user_model import User, UserSchema
 from blacklist import BLACKLIST
 
 api = Namespace('logout', description='Log out')
-
-user_schema = UserSchema()
-users_schema = UserSchema(many=True)
 
 @api.route('')
 class Logout(Resource):

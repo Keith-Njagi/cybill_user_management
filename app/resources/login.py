@@ -5,9 +5,10 @@ from flask_restx import Namespace, Resource, fields
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_refresh_token_required
 
-from models.user_model import User, UserSchema
-from models.user_role_model import UserRole, UserRoleSchema
-from models.session_model import Session
+from models.user import UserModel
+from models.user_role import UserRoleModel
+from models.session import SessionModel
+from schemas.user import UserSchema
 from user_functions.user_role_manager import UserPrivilege
 from user_functions.compute_session_data import generate_device_data
 
@@ -16,7 +17,6 @@ api = Namespace('login', description='Log in')
 
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
-user_role_schema = UserRoleSchema()
 
 my_user_model = api.model('Login', {
     'email': fields.String(required=True, description='Email'),
@@ -54,13 +54,13 @@ class Login(Resource):
                 return {'message': 'No input data detected'}, 400
 
             email = data['email']
-            this_user = User.fetch_by_email(email)
+            this_user = UserModel.fetch_by_email(email)
             if this_user:
                 if check_password_hash(this_user.password, data['password']):
                     current_user = user_schema.dump(this_user)
                     user_id = this_user.id
                     # fetch User role
-                    user_role = UserRole.fetch_by_user_id(user_id)
+                    user_role = UserRoleModel.fetch_by_user_id(user_id)
                     # UserPrivilege.get_privileges(user_id = user_id, role= user_role.role)
                     # privileges = UserPrivilege.privileges
                     privileges = user_role.role.role
@@ -68,10 +68,10 @@ class Login(Resource):
                     # Create access token
                     expiry_time = timedelta(minutes=30)
                     my_identity = {'id':this_user.id, 'privileges':privileges}
-                    access_token = create_access_token(identity=my_identity, expires_delta=expiry_time)
+                    access_token = create_access_token(identity=my_identity, expires_delta=expiry_time, fresh=True)
                     refresh_token = create_refresh_token(my_identity)
                     # Save session info to db
-                    new_session_record = Session(user_ip_address=ip, device_operating_system=device_os, user_id=user_id)    
+                    new_session_record = SessionModel(user_ip_address=ip, device_operating_system=device_os, user_id=user_id)    
                     new_session_record.insert_record()
                     return {'user': current_user, 'access_token': access_token, "refresh_token": refresh_token}, 200
             if not this_user or not check_password_hash(this_user.password, data['password']):

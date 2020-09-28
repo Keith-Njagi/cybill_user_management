@@ -1,49 +1,42 @@
 from datetime import datetime
+from typtng import List
 
-from marshmallow import Schema, fields
+from . import db
 
-from . import db, ma
-
-class Role(db.Model):
+class RoleModel(db.Model):
     __tablename__='roles'
     id = db.Column(db.Integer, primary_key=True)
     role = db.Column(db.String(20), unique=True, nullable=False)
     created = db.Column(db.DateTime, default=datetime.utcnow(), nullable=False)
     updated = db.Column(db.DateTime, onupdate=datetime.utcnow(), nullable=True)
 
-    def insert_record(self):
+    user_roles = db.relationship('UserRoleModel', lazy=dynamic)
+
+    def insert_record(self) -> None:
         db.session.add(self)
         db.session.commit()
-        return self
 
     @classmethod
-    def fetch_all(cls):
+    def fetch_all(cls) -> List['RoleModel']:
         return cls.query.order_by(cls.id.asc()).all()
 
     @classmethod
-    def fetch_by_id(cls, id):
+    def fetch_by_id(cls, id:int) -> 'RoleModel':
         return cls.query.get(id)
 
     @classmethod
-    def fetch_by_role(cls, role):
+    def fetch_by_role(cls, role:str) -> 'RoleModel':
         return cls.query.filter_by(role).first()
 
     @classmethod  
-    def update(cls, id, role=None):
+    def update(cls, id:int, role:str=None) -> None:
         record = cls.fetch_by_id(id)
         if role:
             record.role = role
         db.session.commit()
-        return True
 
     @classmethod
-    def delete_by_id(cls, id):
+    def delete_by_id(cls, id:int) -> None:
         record = cls.query.filter_by(id=id)
         record.delete()
         db.session.commit()
-        return True
-
-class RoleSchema(ma.Schema):
-    class Meta:
-        fields = ('id','role','created','updated')
-
