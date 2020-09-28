@@ -1,5 +1,5 @@
 from datetime import datetime
-from typtng import List
+from typing import List
 
 from . import db
 

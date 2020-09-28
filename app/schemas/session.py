@@ -14,7 +14,7 @@ class SessionSchema(ma.SQLAlchemyAutoSchema):
         include_fk = True
 
     _links = ma.Hyperlinks({
-        'session_by_user': ma.URLFor('UserSessionList', id='<user_id>'),
-        'collection': ma.URLFor('SessionList')
+        'session_by_user': ma.URLFor('api.session_user_session_list', user_id='<user_id>'),
+        'collection': ma.URLFor('api.session_session_list')
     })
         

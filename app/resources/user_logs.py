@@ -76,7 +76,7 @@ class UserLogList(Resource):
 # get specific log - User, Admin, Customer care
 @api.route('/<int:id>')
 @api.param('id', 'The user log identifier')
-class UserLogdetail(Resource):
+class UserLogDetail(Resource):
     @jwt_required
     @api.doc('Get specific log')
     def get(self, id:int):

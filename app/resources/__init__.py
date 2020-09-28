@@ -2,6 +2,15 @@ from flask import Blueprint
 from flask_restx import Api
 from flask_jwt_extended import JWTManager
 
+# This import order is important so as to avoid 
+# an sqlalchemy.exc.InvalidRequestError while mapping model relationships
+from models.user import UserModel
+from models.role import RoleModel
+from models.user_role import UserRoleModel 
+from models.password_reset import PasswordResetModel
+from models.session import SessionModel
+from models.user_logs import UserLogModel
+
 from blacklist import BLACKLIST
 from .mail import mail
 from .signup import api as signup

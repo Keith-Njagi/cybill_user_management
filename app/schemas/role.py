@@ -12,7 +12,7 @@ class RoleSchema(ma.SQLAlchemyAutoSchema):
         include_fk = True
 
     _links = ma.Hyperlinks({
-        'collection': ma.URLFor('RoleList')
+        'collection': ma.URLFor('api.roles_role_list')
     })
         
         

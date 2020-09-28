@@ -1,12 +1,11 @@
 from datetime import datetime
 
-from . import db, ma
+from . import  ma
 from models.session import SessionModel
 from models.user_logs import UserLogModel
 
 
 class UserLogSchema(ma.SQLAlchemyAutoSchema):
-    user_logs = ma.Nested(UserLogSchema, many=True)
     class Meta:
         model = UserLogModel
         load_only = ('session',)
@@ -14,9 +13,9 @@ class UserLogSchema(ma.SQLAlchemyAutoSchema):
         include_fk = True
 
     _links = ma.Hyperlinks({
-        'self': ma.URLFor('UserLogDetail', id='<id>'),
-        'collection': ma.URLFor('UserLogList'),
-        'logs_by_session': ma.URLFor('ListLogsBySession', id='session_id'),
-        'logs_by_user': ma.URLFor('ListLogsByUser', id='user_id')
+        'self': ma.URLFor('api.logs_user_log_detail', id='<id>'),
+        'collection': ma.URLFor('api.logs_user_log_list'),
+        'logs_by_session': ma.URLFor('api.logs_list_logs_by_session', session_id='<session_id>'),
+        'logs_by_user': ma.URLFor('api.logs_list_logs_by_user', user_id='<id>')
     })
         

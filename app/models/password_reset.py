@@ -1,6 +1,5 @@
 from datetime import datetime
-from ttyping import List
-
+from typing import List
 
 from . import db
 
@@ -8,17 +7,22 @@ class PasswordResetModel(db.Model):
     __tablename__ = 'password_resets'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    user = db.relationship('UserModel')
+    
 
     reset_code = db.Column(db.String(225), nullable=False)
     is_expired = db.Column(db.Boolean, default=False)
     created = db.Column(db.DateTime, default=datetime.utcnow(), nullable=False)
     updated = db.Column(db.DateTime, onupdate=datetime.utcnow(), nullable=True)
-
+    
+    user = db.relationship('UserModel')
 
     def insert_record(self) -> None:
         db.session.add(self)
         db.session.commit()
+
+    @classmethod
+    def fetch_all(cls) -> List['PasswordResetModel']:
+        return cls.query.order_by(cls.id.asc()).all()
 
     @classmethod
     def fetch_by_id(cls, id:int) -> 'PasswordResetModel':

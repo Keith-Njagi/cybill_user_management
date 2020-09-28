@@ -1,7 +1,7 @@
 from flask_restx import Namespace, Resource, fields
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt_claims
 
-from models.session import Session
+from models.session import SessionModel
 from schemas.session import SessionSchema
 
 api = Namespace('session', description='User Session Operations')

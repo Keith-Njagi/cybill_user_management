@@ -15,15 +15,16 @@ class UserModel(db.Model):
     updated = db.Column(db.DateTime, onupdate=datetime.utcnow(), nullable=True)
 
     user_roles = db.relationship('UserRoleModel', lazy='dynamic')
-    password_resets = db.relationship('PasswordResetModel', lazy='dynamic')
     sessions = db.relationship('SessionModel', lazy='dynamic')
+    password_resets = db.relationship('PasswordResetModel', lazy='dynamic')
+
 
     def insert_record(self) -> None:
         db.session.add(self)
         db.session.commit()
 
     @classmethod
-    def fetch_all(cls) -> None:
+    def fetch_all(cls) -> List['UserModel']:
         return cls.query.order_by(cls.id.asc()).all()
 
     @classmethod

@@ -6,16 +6,17 @@ import uuid
 import requests
 from flask_restx import Namespace, Resource, fields
 from werkzeug.security import generate_password_hash
-from flask_jwt_extended import create_access_token, create_refresh_token
+from flask_jwt_extended import create_access_token, create_refresh_token, fresh_jwt_required, get_jwt_claims, get_jwt_identity
 from flask import request, render_template
 from .mail import mail, Message
 
-from models.user import UserModel
+
 from models.password_reset import PasswordResetModel
+from models.user import UserModel
 from models.user_role import UserRoleModel
 from models.session import SessionModel
-from schemas.user import UserSchema
 from schemas.password_reset import PasswordResetSchema
+from schemas.user import UserSchema
 from user_functions.token_generator import TokenGenerator
 from user_functions.user_role_manager import UserPrivilege
 from user_functions.compute_session_data import generate_device_data
@@ -199,7 +200,7 @@ class ResetPassword(Resource):
             access_token = create_access_token(identity=my_identity, expires_delta=expiry_time, fresh=True)
             refresh_token = create_refresh_token(my_identity)
             # Save session info to db
-            new_session_record = Session(user_ip_address=ip, device_operating_system=device_os, user_id=user_id)    
+            new_session_record = SessionModel(user_ip_address=ip, device_operating_system=device_os, user_id=user_id)    
             new_session_record.insert_record()
 
             # Record this event in user's logs
@@ -215,3 +216,41 @@ class ResetPassword(Resource):
             print('error description: ', e)
             print('========================================')
             return {'message': 'Could not reset password.'}, 500
+
+
+
+@api.route('/reset/list')
+class PasswordResetList(Resource):
+    @classmethod
+    @fresh_jwt_required
+    @api.doc('Fetch all password reset records')
+    def get(cls):
+        claims = get_jwt_claims()
+        try:
+            if claims['is_admin']:
+                password_resets = PasswordResetModel.fetch_all()
+                return password_resets_schema.dump(password_resets), 200
+            return {'message':'You are not authorised to access this resource'}, 403
+        except Exception as e:
+            print('========================================')
+            print('error description: ', e)
+            print('========================================')
+            return {'message': 'Could not fetch password resets'}, 500
+
+@api.route('reset/list/user')
+class UserPasswordResetList(Resource):
+    @classmethod
+    @fresh_jwt_required
+    @api.doc('Fetch all password reset records')
+    def get(cls):
+        authorised_user = get_jwt_identity()
+        try:
+            user_id =authorised_user['id']
+            password_resets = PasswordResetModel.fetch_by_user_id(user_id=user_id)
+            return password_resets_schema.dump(password_resets), 200
+        except Exception as e:
+            print('========================================')
+            print('error description: ', e)
+            print('========================================')
+            return {'message': 'Could not fetch password resets'}, 500
+
