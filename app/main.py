@@ -7,7 +7,8 @@ from flask_cors import CORS
 
 from configurations import *
 from resources import mail, blueprint, jwt 
-from models import db, ma
+from models import db
+from schemas import ma
 
 app = Flask(__name__)
 

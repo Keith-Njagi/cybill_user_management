@@ -3,8 +3,10 @@ from flask_restx import Namespace, Resource, fields
 from flask_jwt_extended import jwt_required, get_jwt_claims, get_jwt_identity
 from flask import request
 
-from models.role_model import Role, RoleSchema
-from models.user_role_model import UserRole, UserRoleSchema
+from models.role import RoleModel
+from models.user_role import UserRoleModel
+from schemas.role import RoleSchema
+from schemas.user_role import UserRoleSchema
 from user_functions.user_role_manager import UserPrivilege
 from user_functions.record_user_log import record_user_log
 
@@ -31,9 +33,8 @@ class RoleList(Resource):
             claims = get_jwt_claims()
             authorised_user = get_jwt_identity()
             if claims['is_admin']:
-                db_roles = Role.fetch_all()
-                roles = roles_schema.dump(db_roles)
-
+                roles = Role.fetch_all()
+                 
                 # Record this event in user's logs
                 log_user_id = authorised_user['id']
                 log_method = 'get'
@@ -44,7 +45,7 @@ class RoleList(Resource):
                 auth_token  = { "Authorization": authorization}
                 record_user_log(auth_token, log_method, log_description)
 
-                return {'roles':roles}
+                return roles_schema.dump(roles), 200
             return {'message':'You do not have the required permissions!'}, 400
         except Exception as e:
             print('========================================')
@@ -53,12 +54,12 @@ class RoleList(Resource):
             return {'message': 'Could not get user roles.'}, 500
 
 
-@api.route('/user/<int:id>')
-@api.param('id', 'The role identifier')
-class UserRoleList(Resource):
+@api.route('/user/<int:user_id>')
+@api.param('user_id', 'The user identifier')
+class UserRoleDetail(Resource):
     @api.doc('Get user role')
     @jwt_required
-    def get(self, id):
+    def get(self, user_id:int):
         '''Get User Role'''
         try:
             claims = get_jwt_claims()
@@ -66,7 +67,7 @@ class UserRoleList(Resource):
             if not claims['is_admin']:
                 return {'message': 'You do not have the required permissions!'}, 403
 
-            role_record = UserRole.fetch_by_user_id(id)
+            role_record = UserRole.fetch_by_user_id(user_idid)
             if role_record:
                 # user_role = user_role_schema.dump(role_record)
                 user_role = role_record.role.role
@@ -74,7 +75,7 @@ class UserRoleList(Resource):
                 # Record this event in user's logs
                 log_user_id = authorised_user['id']
                 log_method = 'get'
-                log_description = 'Fetched role for user <' + str(id) + '>'
+                log_description = 'Fetched role for user <' + str(user_id) + '>'
                 # record_user_log(log_user_id, log_method, log_description)
                 
                 authorization = request.headers.get('Authorization')
@@ -93,7 +94,7 @@ class UserRoleList(Resource):
     @api.doc('Update a user role')
     @api.expect(user_role_model)
     @jwt_required
-    def put(self, id):
+    def put(self, user_id:int):
         '''Update a User Role'''
         try:
             claims = get_jwt_claims()
@@ -105,7 +106,7 @@ class UserRoleList(Resource):
             if not data:
                 return {'message':'No input data detected'}, 400
 
-            role_record = UserRole.fetch_by_user_id(id)
+            role_record = UserRole.fetch_by_user_id(user_id)
             if role_record:
                 role = data['role']
                 id = role_record.id
@@ -115,7 +116,7 @@ class UserRoleList(Resource):
 
                 # Record this event in user's logs
                 log_method = 'put'
-                log_description = 'Updated role for user <' + str(id) + '>'
+                log_description = 'Updated role for user <' + str(user_id) + '>'
 
                 authorization = request.headers.get('Authorization')
                 auth_token  = { "Authorization": authorization}

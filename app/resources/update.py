@@ -2,7 +2,8 @@ from flask_restx import Namespace, Resource, fields
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask import request
 
-from models.user_model import User, UserSchema
+from models.user import UserModel
+from schemas.user import UserSchema
 from user_functions.record_user_log import record_user_log
 
 api = Namespace('update', description='Update User')
@@ -22,10 +23,10 @@ class UpdateUser(Resource):
     @api.doc('Update user')
     @api.expect(user_model)
     @jwt_required
-    def put(self,id):
+    def put(self,id:int):
         '''Update User'''
         try:
-            my_user = User.fetch_by_id(id)
+            my_user = UserModel.fetch_by_id(id)
             user = user_schema.dump(my_user)
             if len(user) == 0:
                 return {'message':'User does not exist'}, 404
@@ -40,14 +41,14 @@ class UpdateUser(Resource):
 
             email = data['email'].lower()
 
-            db_user = User.fetch_by_email(email)
+            db_user = UserModel.fetch_by_email(email)
             user_to_check = user_schema.dump(db_user)
             if len(user_to_check) > 0:
                 if email == user_to_check['email'] and id != user_to_check['id']:
                     return {'message':'Falied... A user with this email already exists'}, 400
 
             phone = data['phone']
-            db_user = User.fetch_by_phone(phone)
+            db_user = UserModel.fetch_by_phone(phone)
             user_to_check = user_schema.dump(db_user)
             if len(user_to_check) > 0:
                 if phone == user_to_check['phone'] and id != user_to_check['id']:
@@ -55,10 +56,10 @@ class UpdateUser(Resource):
 
             full_name = data['full_name'].lower()
 
-            User.update(id=id, email=email, full_name=full_name, phone=phone)
+            UserModel.update(id=id, email=email, full_name=full_name, phone=phone)
 
-            this_user = User.fetch_by_email(email)
-            current_user = user_schema.dump(this_user)
+            this_user = UserModel.fetch_by_email(email)
+            
 
             # Record this event in user's logs
             log_method = 'put'
@@ -68,7 +69,7 @@ class UpdateUser(Resource):
             auth_token  = { "Authorization": authorization}
             record_user_log(auth_token, log_method, log_description)
 
-            return {'user': current_user}, 200
+            return user_schema.dump(this_user), 200
         except Exception as e:
             print('========================================')
             print('error description: ', e)
