@@ -19,6 +19,7 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
     _links = ma.Hyperlinks({
         'self': ma.URLFor('api.user_user_detail', id='<id>'),
         'update': ma.URLFor('api.update_update_user', id='<id>'),
+        'current_user':ma.URLFor('api.user_current_user_detail'),
         'collection': ma.URLFor('api.user_user_list')
     })
         

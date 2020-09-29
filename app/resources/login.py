@@ -57,7 +57,7 @@ class Login(Resource):
             this_user = UserModel.fetch_by_email(email)
             if this_user:
                 if check_password_hash(this_user.password, data['password']):
-                    current_user = user_schema.dump(this_user)
+                    # current_user = user_schema.dump(this_user) # This line would be used if we were outputing the user
                     user_id = this_user.id
                     # fetch User role
                     user_role = UserRoleModel.fetch_by_user_id(user_id)
@@ -73,7 +73,7 @@ class Login(Resource):
                     # Save session info to db
                     new_session_record = SessionModel(user_ip_address=ip, device_operating_system=device_os, user_id=user_id)    
                     new_session_record.insert_record()
-                    return {'user': current_user, 'access_token': access_token, "refresh_token": refresh_token}, 200
+                    return { 'access_token': access_token, "refresh_token": refresh_token}, 200
             if not this_user or not check_password_hash(this_user.password, data['password']):
                 return {'message': 'Could not log in, please check your credentials'}, 400
         except Exception as e:
