@@ -187,7 +187,7 @@ class ResetPassword(Resource):
             UserModel.update_password(id=user_id, password=hashed_password)
 
             this_user = UserModel.fetch_by_id(id=user_id)
-            user = user_schema.dump(this_user)
+            # user = user_schema.dump(this_user) # This line would be used if we were outputing the user
 
             user_id = this_user.id
 
@@ -210,7 +210,7 @@ class ResetPassword(Resource):
             auth_token  = { "Authorization": "Bearer %s" % access_token }
             record_user_log(auth_token, log_method, log_description)
             
-            return {'user': user, 'access_token': access_token, "refresh_token": refresh_token}, 200
+            return {'access_token': access_token, "refresh_token": refresh_token}, 200
         except Exception as e:
             print('========================================')
             print('error description: ', e)

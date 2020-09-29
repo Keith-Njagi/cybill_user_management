@@ -44,6 +44,24 @@ class UserList(Resource):
             print('========================================')
             return {'message': 'Could not get users.'}, 500
 
+@api.route('/current')
+class CurrentUserDetail(Resource):
+    @classmethod
+    @api.doc('Get current user')
+    @jwt_required
+    def get(self):
+        '''Get current user'''
+        try:
+            authorised_user = get_jwt_identity()
+            user_id = authorised_user['id']
+            user = UserModel.fetch_by_id(id=user_id)
+            return user_schema.dump(user)
+        except Exception as e:
+            print('========================================')
+            print('error description: ', e)
+            print('========================================')
+            return {'message': 'Could not get user.'}, 500
+
 @api.route('/<int:id>')
 @api.param('id', 'The user identifier')
 class UserDetail(Resource):

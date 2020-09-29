@@ -70,7 +70,7 @@ class RegisterUser(Resource):
             new_user = UserModel(full_name=full_name, phone=phone, email=email, password=hashed_password)
             new_user.insert_record()
 
-            user = user_schema.dump(data)
+            # user = user_schema.dump(data) # This line would be used if we were outputing the user
 
             this_user = UserModel.fetch_by_email(email)
 
@@ -98,7 +98,7 @@ class RegisterUser(Resource):
             # Save session info to db
             new_session_record = SessionModel(user_ip_address=ip, device_operating_system=device_os, user_id=user_id)    
             new_session_record.insert_record()
-            return {'access token': access_token, "refresh_token": refresh_token, 'user': user}, 201
+            return {'access token': access_token, "refresh_token": refresh_token }, 201
         except Exception as e:
             print('========================================')
             print('error description: ', e)
