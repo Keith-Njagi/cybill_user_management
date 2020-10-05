@@ -6,9 +6,12 @@
 /app/schemas/__pycache__
 /app/user_functions/__pycache__
 
-/test/__pycache__
-/test/resources/__pycache__
-/test/user_functions/__pycache__
+/tests/__pycache__
+/tests/.pytest_cache
+/tests/resources/__pycache__
+/tests/resources/.pytest_cache
+/tests/user_functions/__pycache__
+/tests/user_functions/.pytest_cache
 
 /venv
 env
